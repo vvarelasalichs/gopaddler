@@ -1,11 +1,11 @@
-/// Session model - Main domain entity for tracking sessions
 import 'dart:math';
 
+// Main Session Model
 class Session {
   final String id;
   final DateTime startTime;
   DateTime? endTime;
-  final String sportType;
+  final String sportType; // 'canoeing', 'cycling'
   final String? boatType;
   final List<GpsPoint> gpsPoints;
   final List<Measurement> measurements;
@@ -13,7 +13,7 @@ class Session {
   final List<HeartRateZone> zones;
   final SessionSettings settings;
   bool isSynced;
-  
+
   Session({
     required this.id,
     required this.startTime,
@@ -28,13 +28,14 @@ class Session {
     this.isSynced = false,
   });
 
-  // Calculators
+  // Getters para cálculos
   Duration get duration {
     final end = endTime ?? DateTime.now();
     return end.difference(startTime);
   }
 
   double get totalDistance {
+    if (gpsPoints.isEmpty) return 0.0;
     double distance = 0.0;
     for (int i = 0; i < gpsPoints.length - 1; i++) {
       distance += gpsPoints[i].distanceTo(gpsPoints[i + 1]);
@@ -48,10 +49,29 @@ class Session {
   }
 
   double get maxSpeed {
-    return gpsPoints.fold(0.0, (prev, point) => point.speed > prev ? point.speed : prev);
+    if (gpsPoints.isEmpty) return 0.0;
+    return gpsPoints.fold(
+        0.0, (prev, point) => point.speed > prev ? point.speed : prev);
   }
 
+  // Serialización para base de datos
   Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'startTime': startTime.toIso8601String(),
+      'endTime': endTime?.toIso8601String(),
+      'sportType': sportType,
+      'boatType': boatType,
+      'totalDistance': totalDistance,
+      'averageSpeed': averageSpeed,
+      'maxSpeed': maxSpeed,
+      'isSynced': isSynced ? 1 : 0,
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+  }
+
+  // JSON para API
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'startTime': startTime.toIso8601String(),
@@ -62,23 +82,52 @@ class Session {
       'totalDistance': totalDistance,
       'averageSpeed': averageSpeed,
       'maxSpeed': maxSpeed,
-      'isSynced': isSynced ? 1 : 0,
+      'gpsPoints': gpsPoints.map((p) => p.toJson()).toList(),
+      'measurements': measurements.map((m) => m.toJson()).toList(),
+      'splits': splits.map((s) => s.toJson()).toList(),
+      'zones': zones.map((z) => z.toJson()).toList(),
+      'settings': settings.toJson(),
     };
   }
 
   factory Session.fromMap(Map<String, dynamic> map) {
     return Session(
       id: map['id'] ?? '',
-      startTime: DateTime.parse(map['startTime'] ?? DateTime.now().toIso8601String()),
+      startTime:
+          DateTime.parse(map['startTime'] ?? DateTime.now().toIso8601String()),
       endTime: map['endTime'] != null ? DateTime.parse(map['endTime']) : null,
       sportType: map['sportType'] ?? 'canoeing',
       boatType: map['boatType'],
-      settings: SessionSettings(),
+      settings: SessionSettings.fromMap(map['settings'] ?? {}),
+      isSynced: (map['isSynced'] ?? 0) == 1,
+    );
+  }
+
+  factory Session.fromJson(Map<String, dynamic> json) {
+    return Session(
+      id: json['id'] ?? '',
+      startTime: DateTime.parse(json['startTime']),
+      endTime: json['endTime'] != null ? DateTime.parse(json['endTime']) : null,
+      sportType: json['sportType'] ?? 'canoeing',
+      boatType: json['boatType'],
+      gpsPoints: (json['gpsPoints'] as List? ?? [])
+          .map((p) => GpsPoint.fromJson(p))
+          .toList(),
+      measurements: (json['measurements'] as List? ?? [])
+          .map((m) => Measurement.fromJson(m))
+          .toList(),
+      splits: (json['splits'] as List? ?? [])
+          .map((s) => Split.fromJson(s))
+          .toList(),
+      zones: (json['zones'] as List? ?? [])
+          .map((z) => HeartRateZone.fromJson(z))
+          .toList(),
+      settings: SessionSettings.fromJson(json['settings'] ?? {}),
     );
   }
 }
 
-/// GPS Point with coordinates and timestamp
+// GPS Point Model
 class GpsPoint {
   final double latitude;
   final double longitude;
@@ -98,28 +147,61 @@ class GpsPoint {
     required this.timestamp,
   });
 
-  /// Calculate distance to another point (Haversine formula)
+  /// Calcula distancia a otro punto usando fórmula Haversine
   double distanceTo(GpsPoint other) {
-    const earthRadius = 6371000; // meters
+    const earthRadius = 6371000; // metros
     final dLat = _toRad(other.latitude - latitude);
     final dLon = _toRad(other.longitude - longitude);
-    final a = 
-      (sin(dLat / 2) * sin(dLat / 2)) +
-      cos(_toRad(latitude)) * cos(_toRad(other.latitude)) * 
-      (sin(dLon / 2) * sin(dLon / 2));
-    
+    final a = (sin(dLat / 2) * sin(dLat / 2)) +
+        cos(_toRad(latitude)) *
+            cos(_toRad(other.latitude)) *
+            (sin(dLon / 2) * sin(dLon / 2));
+
     final c = 2 * atan2(sqrt(a), sqrt(1 - a));
     return earthRadius * c;
   }
 
-  static double _toRad(double deg) => deg * 3.14159265359 / 180;
+  static double _toRad(double deg) => deg * pi / 180;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'latitude': latitude,
+      'longitude': longitude,
+      'altitude': altitude,
+      'accuracy': accuracy,
+      'speed': speed,
+      'heading': heading,
+      'timestamp': timestamp.toIso8601String(),
+    };
+  }
+
+  Map<String, dynamic> toJson() {
+    return toMap();
+  }
+
+  factory GpsPoint.fromMap(Map<String, dynamic> map) {
+    return GpsPoint(
+      latitude: map['latitude'] ?? 0.0,
+      longitude: map['longitude'] ?? 0.0,
+      altitude: map['altitude'] ?? 0.0,
+      accuracy: map['accuracy'] ?? 0.0,
+      speed: map['speed'] ?? 0.0,
+      heading: map['heading'] ?? 0.0,
+      timestamp:
+          DateTime.parse(map['timestamp'] ?? DateTime.now().toIso8601String()),
+    );
+  }
+
+  factory GpsPoint.fromJson(Map<String, dynamic> json) {
+    return GpsPoint.fromMap(json);
+  }
 }
 
-/// Generic measurement (Speed, Pace, Distance, etc.)
+// Measurement Model
 class Measurement {
-  final String type; // speed, pace, distance, cadence, strokeRate
+  final String type; // speed, pace, distance, cadence, strokeRate, heartRate
   final double value;
-  final String unit; // m/s, min/km, m, rpm, strokes/min
+  final String unit; // m/s, min/km, m, rpm, strokes/min, bpm
   final DateTime timestamp;
 
   Measurement({
@@ -137,9 +219,27 @@ class Measurement {
       'timestamp': timestamp.toIso8601String(),
     };
   }
+
+  Map<String, dynamic> toJson() {
+    return toMap();
+  }
+
+  factory Measurement.fromMap(Map<String, dynamic> map) {
+    return Measurement(
+      type: map['type'] ?? '',
+      value: (map['value'] ?? 0.0).toDouble(),
+      unit: map['unit'] ?? '',
+      timestamp:
+          DateTime.parse(map['timestamp'] ?? DateTime.now().toIso8601String()),
+    );
+  }
+
+  factory Measurement.fromJson(Map<String, dynamic> json) {
+    return Measurement.fromMap(json);
+  }
 }
 
-/// Session split for interval tracking
+// Split Model para intervalos
 class Split {
   final int number;
   final Duration duration;
@@ -147,6 +247,8 @@ class Split {
   final double averageSpeed;
   final double averagePace;
   final int? averageHeartRate;
+  final int? averageCadence;
+  final int? averageStrokeRate;
 
   Split({
     required this.number,
@@ -155,37 +257,168 @@ class Split {
     required this.averageSpeed,
     required this.averagePace,
     this.averageHeartRate,
+    this.averageCadence,
+    this.averageStrokeRate,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'number': number,
+      'durationSeconds': duration.inSeconds,
+      'distance': distance,
+      'averageSpeed': averageSpeed,
+      'averagePace': averagePace,
+      'averageHeartRate': averageHeartRate,
+      'averageCadence': averageCadence,
+      'averageStrokeRate': averageStrokeRate,
+    };
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'number': number,
+      'duration': duration.inSeconds,
+      'distance': distance,
+      'averageSpeed': averageSpeed,
+      'averagePace': averagePace,
+      'averageHeartRate': averageHeartRate,
+      'averageCadence': averageCadence,
+      'averageStrokeRate': averageStrokeRate,
+    };
+  }
+
+  factory Split.fromMap(Map<String, dynamic> map) {
+    return Split(
+      number: map['number'] ?? 0,
+      duration: Duration(seconds: map['durationSeconds'] ?? 0),
+      distance: (map['distance'] ?? 0.0).toDouble(),
+      averageSpeed: (map['averageSpeed'] ?? 0.0).toDouble(),
+      averagePace: (map['averagePace'] ?? 0.0).toDouble(),
+      averageHeartRate: map['averageHeartRate'],
+      averageCadence: map['averageCadence'],
+      averageStrokeRate: map['averageStrokeRate'],
+    );
+  }
+
+  factory Split.fromJson(Map<String, dynamic> json) {
+    return Split.fromMap(json);
+  }
 }
 
-/// Heart rate zone for training zones
+// Heart Rate Zone para análisis
 class HeartRateZone {
-  final String name;
+  final int zone; // 1-5
   final int minBpm;
   final int maxBpm;
   final Duration timeInZone;
+  final double percentage;
 
   HeartRateZone({
-    required this.name,
+    required this.zone,
     required this.minBpm,
     required this.maxBpm,
     required this.timeInZone,
+    required this.percentage,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'zone': zone,
+      'minBpm': minBpm,
+      'maxBpm': maxBpm,
+      'timeInZoneSeconds': timeInZone.inSeconds,
+      'percentage': percentage,
+    };
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'zone': zone,
+      'minBpm': minBpm,
+      'maxBpm': maxBpm,
+      'timeInZone': timeInZone.inSeconds,
+      'percentage': percentage,
+    };
+  }
+
+  factory HeartRateZone.fromMap(Map<String, dynamic> map) {
+    return HeartRateZone(
+      zone: map['zone'] ?? 0,
+      minBpm: map['minBpm'] ?? 0,
+      maxBpm: map['maxBpm'] ?? 0,
+      timeInZone: Duration(seconds: map['timeInZoneSeconds'] ?? 0),
+      percentage: (map['percentage'] ?? 0.0).toDouble(),
+    );
+  }
+
+  factory HeartRateZone.fromJson(Map<String, dynamic> json) {
+    return HeartRateZone.fromMap(json);
+  }
 }
 
-/// Session settings specific to a session
+// Session Settings
 class SessionSettings {
-  final bool useBackgroundGps;
-  final bool useHeartRateMonitor;
-  final bool useAudioFeedback;
-  final bool recordAccelerometer;
-  final int gpsUpdateRateSeconds;
+  final bool recordGps;
+  final bool recordHeartRate;
+  final bool recordCadence;
+  final bool recordPace;
+  final int gpsIntervalSeconds;
+  final String? notes;
+  final Map<String, dynamic> metadata; // Para datos adicionales
 
-  SessionSettings({
-    this.useBackgroundGps = true,
-    this.useHeartRateMonitor = false,
-    this.useAudioFeedback = true,
-    this.recordAccelerometer = true,
-    this.gpsUpdateRateSeconds = 5,
+  const SessionSettings({
+    this.recordGps = true,
+    this.recordHeartRate = true,
+    this.recordCadence = true,
+    this.recordPace = true,
+    this.gpsIntervalSeconds = 5,
+    this.notes,
+    this.metadata = const {},
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'recordGps': recordGps ? 1 : 0,
+      'recordHeartRate': recordHeartRate ? 1 : 0,
+      'recordCadence': recordCadence ? 1 : 0,
+      'recordPace': recordPace ? 1 : 0,
+      'gpsIntervalSeconds': gpsIntervalSeconds,
+      'notes': notes,
+    };
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'recordGps': recordGps,
+      'recordHeartRate': recordHeartRate,
+      'recordCadence': recordCadence,
+      'recordPace': recordPace,
+      'gpsIntervalSeconds': gpsIntervalSeconds,
+      'notes': notes,
+      'metadata': metadata,
+    };
+  }
+
+  factory SessionSettings.fromMap(Map<String, dynamic> map) {
+    return SessionSettings(
+      recordGps: (map['recordGps'] ?? 1) == 1,
+      recordHeartRate: (map['recordHeartRate'] ?? 1) == 1,
+      recordCadence: (map['recordCadence'] ?? 1) == 1,
+      recordPace: (map['recordPace'] ?? 1) == 1,
+      gpsIntervalSeconds: map['gpsIntervalSeconds'] ?? 5,
+      notes: map['notes'],
+    );
+  }
+
+  factory SessionSettings.fromJson(Map<String, dynamic> json) {
+    return SessionSettings(
+      recordGps: json['recordGps'] ?? true,
+      recordHeartRate: json['recordHeartRate'] ?? true,
+      recordCadence: json['recordCadence'] ?? true,
+      recordPace: json['recordPace'] ?? true,
+      gpsIntervalSeconds: json['gpsIntervalSeconds'] ?? 5,
+      notes: json['notes'],
+      metadata: json['metadata'] ?? {},
+    );
+  }
 }
