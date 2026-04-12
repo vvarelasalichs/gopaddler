@@ -39,8 +39,8 @@ dependencies:
   fl_chart: ^0.68.0
   
   # Utilidades
-  intl: ^0.19.0
-  just_audio: ^0.9.31
+  intl: ^0.20.2
+  # just_audio: ^0.9.31  # TODO: Fix web compatibility
   vibration: ^1.8.0
   connectivity_plus: ^5.0.0
   device_info_plus: ^9.0.0
@@ -66,9 +66,9 @@ flutter:
     - assets/sounds/
     - assets/config/
 
-  fonts:
-    - family: Roboto
-      fonts:
-        - asset: assets/fonts/Roboto-Regular.ttf
-        - asset: assets/fonts/Roboto-Bold.ttf
-          weight: 700
+  # fonts:
+  #   - family: Roboto
+  #     fonts:
+  #       - asset: assets/fonts/Roboto-Regular.ttf
+  #       - asset: assets/fonts/Roboto-Bold.ttf
+  #         weight: 700

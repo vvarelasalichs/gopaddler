@@ -1,5 +1,5 @@
 /// Session model - Main domain entity for tracking sessions
-import 'package:flutter/foundation.dart';
+import 'dart:math';
 
 class Session {
   final String id;
@@ -104,19 +104,15 @@ class GpsPoint {
     final dLat = _toRad(other.latitude - latitude);
     final dLon = _toRad(other.longitude - longitude);
     final a = 
-      (_sin(dLat / 2) * _sin(dLat / 2)) +
-      _cos(_toRad(latitude)) * _cos(_toRad(other.latitude)) * 
-      (_sin(dLon / 2) * _sin(dLon / 2));
+      (sin(dLat / 2) * sin(dLat / 2)) +
+      cos(_toRad(latitude)) * cos(_toRad(other.latitude)) * 
+      (sin(dLon / 2) * sin(dLon / 2));
     
-    final c = 2 * _atan2(_sqrt(a), _sqrt(1 - a));
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
     return earthRadius * c;
   }
 
   static double _toRad(double deg) => deg * 3.14159265359 / 180;
-  static double _sin(double x) => double.parse(sin(x).toStringAsFixed(10));
-  static double _cos(double x) => double.parse(cos(x).toStringAsFixed(10));
-  static double _sqrt(double x) => x.sqrt();
-  static double _atan2(double y, double x) => atan2(y, x);
 }
 
 /// Generic measurement (Speed, Pace, Distance, etc.)

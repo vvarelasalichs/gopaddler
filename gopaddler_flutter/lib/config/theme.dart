@@ -50,7 +50,7 @@ final ThemeData lightTheme = ThemeData(
     foregroundColor: Colors.white,
     elevation: 8,
   ),
-  cardTheme: CardTheme(
+  cardTheme: CardThemeData(
     color: surfaceColor,
     elevation: 2,
     shape: RoundedRectangleBorder(

@@ -1,0 +1,85 @@
+import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+part 'settings_event.dart';
+part 'settings_state.dart';
+
+class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
+  AppSettings _settings = const AppSettings();
+
+  SettingsBloc() : super(const SettingsInitial()) {
+    on<LoadSettingsEvent>(_onLoadSettings);
+    on<UpdateLanguageEvent>(_onUpdateLanguage);
+    on<UpdateThemeEvent>(_onUpdateTheme);
+    on<UpdateGpsRateEvent>(_onUpdateGpsRate);
+    on<UpdateUserProfileEvent>(_onUpdateUserProfile);
+  }
+
+  Future<void> _onLoadSettings(
+    LoadSettingsEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    try {
+      emit(const SettingsLoading());
+      // TODO: Cargar desde SharedPreferences o base de datos
+      emit(SettingsLoaded(_settings));
+    } catch (e) {
+      emit(SettingsError('Error loading settings: $e'));
+    }
+  }
+
+  Future<void> _onUpdateLanguage(
+    UpdateLanguageEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    try {
+      _settings = _settings.copyWith(languageCode: event.languageCode);
+      // TODO: Persistir cambios
+      emit(SettingsUpdated(_settings));
+    } catch (e) {
+      emit(SettingsError('Error updating language: $e'));
+    }
+  }
+
+  Future<void> _onUpdateTheme(
+    UpdateThemeEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    try {
+      _settings = _settings.copyWith(darkMode: event.darkMode);
+      // TODO: Persistir cambios
+      emit(SettingsUpdated(_settings));
+    } catch (e) {
+      emit(SettingsError('Error updating theme: $e'));
+    }
+  }
+
+  Future<void> _onUpdateGpsRate(
+    UpdateGpsRateEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    try {
+      _settings = _settings.copyWith(gpsIntervalSeconds: event.intervalSeconds);
+      // TODO: Persistir cambios
+      emit(SettingsUpdated(_settings));
+    } catch (e) {
+      emit(SettingsError('Error updating GPS rate: $e'));
+    }
+  }
+
+  Future<void> _onUpdateUserProfile(
+    UpdateUserProfileEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    try {
+      _settings = _settings.copyWith(
+        userName: event.name,
+        userEmail: event.email,
+      );
+      // TODO: Persistir cambios
+      emit(SettingsUpdated(_settings));
+    } catch (e) {
+      emit(SettingsError('Error updating profile: $e'));
+    }
+  }
+}
