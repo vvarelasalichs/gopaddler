@@ -218,11 +218,443 @@ e57686f: FASE 4: Crear GpsBloc para orquestar LocationService
 
 ## 📍 FASE 5: Bluetooth & Sensores (Estimado 2 días)
 
+### Objetivos
+- [ ] Conectividad Bluetooth BLE funcional
+- [ ] Lectura de sensores (acelerómetro/giroscopio)
+- [ ] Sincronización de dispositivos BLE
+- [ ] UI para gestión de dispositivos
+
+### Tareas Detalladas
+
+#### 5.1 Crear BluetoothService
+**Archivo:** `lib/data/services/bluetooth_service.dart`
+- Clase BluetoothService con métodos:
+  - `requestPermissions()`: Solicitar permisos BLE
+  - `startScan(duration)`: Escanear dispositivos disponibles
+  - `stopScan()`: Detener escaneo
+  - `connectDevice(deviceId, type)`: Conectar a dispositivo (HR o Cadence)
+  - `disconnectDevice(deviceId)`: Desconectar dispositivo
+  - `subscribeToHeartRate()`: Stream de datos HR
+  - `subscribeToCadence()`: Stream de datos de cadencia
+  - `getConnectedDevices()`: Listar dispositivos conectados
+- Manejo de errores con AppLogger
+- Estados de conexión: connecting, connected, disconnected, error
+
+#### 5.2 Crear BluetoothBloc
+**Archivo:** `lib/presentation/bloc/bluetooth/bluetooth_bloc.dart` (3 archivos: bloc.dart, event.dart, state.dart)
+- Eventos: RequestBluetoothPermissionsEvent, StartBluetoothScanEvent, StopBluetoothScanEvent, ConnectDeviceEvent, DisconnectDeviceEvent, BluetoothDeviceFoundEvent, HeartRateReceivedEvent, CadenceReceivedEvent, BluetoothErrorEvent
+- Estados: BluetoothInitial, BluetoothPermissionRequesting, BluetoothPermissionDenied, BluetoothPermissionGranted, BluetoothScanning, BluetoothConnecting, BluetoothConnected, BluetoothDisconnected, BluetoothError
+- Integración con BluetoothService para streaming
+
+#### 5.3 Crear HeartRateBloc (opcional)
+**Archivo:** `lib/presentation/bloc/heart_rate/heart_rate_bloc.dart` (3 archivos)
+- Eventos: HeartRateUpdatedEvent, HeartRateThresholdReachedEvent
+- Estados: HeartRateInitial, HeartRateMonitoring, HeartRateError
+- Cálculo de zonas de entrenamiento
+
+#### 5.4 Crear SensorService
+**Archivo:** `lib/data/services/sensor_service.dart`
+- Usar `sensors_plus` package
+- Métodos: startAccelerometerStream(), startGyroscopeStream(), stopSensorStreams()
+- Integración con StrokeDetector
+
+#### 5.5 Crear BluetoothDevicePage (UI)
+**Archivo:** `lib/presentation/pages/bluetooth_page.dart` (actualizar existente)
+- Escaneo de dispositivos
+- Lista de disponibles y conectados
+- Botones conectar/desconectar
+- Indicador de señal (rssi)
+
+#### 5.6 Actualizar ServiceLocator
+- Registrar BluetoothService como singleton
+- Registrar SensorService como singleton
+- Registrar BluetoothBloc
+
+#### 5.7 Actualizar main.dart
+- Agregar BluetoothBloc a MultiBlocProvider
+
+#### 5.8 Integración GpsBloc + BluetoothBloc
+- Agregar HeartRate y Cadence a GpsTracking state
+- Actualizar SessionActivePage para mostrar HR y cadencia
+
+### Dependencias a Agregar
+```yaml
+flutter_blue_plus: ^1.29.5
+sensors_plus: ^1.9.5
+```
+
+---
+
+## 📍 FASE 6: Sincronización (Estimado 1 día)
+
+### Objetivos
+- [ ] Sincronización de sesiones con servidor
+- [ ] Almacenamiento local de sesiones sin sincronizar
+- [ ] Integración Strava
+- [ ] WebSocket para sync en tiempo real
+
+### Tareas Detalladas
+
+#### 6.1 Crear SyncService
+**Archivo:** `lib/data/services/sync_service.dart`
+- Métodos: uploadSession, downloadSessions, queueSessionForSync, getSyncQueue, clearSyncQueue, checkSyncStatus
+- Gestión de conexión (WiFi/Mobile data)
+- Retry automático con backoff exponencial
+
+#### 6.2 Crear SyncBloc
+**Archivo:** `lib/presentation/bloc/sync/sync_bloc.dart` (3 archivos)
+- Eventos: SyncSessionEvent, SyncAllQueuedEvent, CheckSyncStatusEvent, SyncProgressEvent, SyncErrorEvent, SyncSuccessEvent
+- Estados: SyncInitial, SyncInProgress, SyncCompleted, SyncError, SyncQueueStatus
+
+#### 6.3 Crear StravaIntegrationService
+**Archivo:** `lib/data/services/strava_service.dart`
+- OAuth2 con Strava
+- Métodos: authenticate, uploadActivity, getAthleteProfile, fetchActivities
+- Gestión de tokens y refresh
+
+#### 6.4 Crear SyncQueueModel
+**Archivo:** `lib/data/models/sync_queue.dart`
+- Modelo para sesiones pendientes: sessionId, timestamp, status, retryCount, lastError
+
+#### 6.5 Actualizar DatabaseService
+- Agregar tabla `sync_queue` con FK a sessions
+- Métodos: insertSyncQueue, getSyncQueue, updateSyncStatus, removeSyncQueue
+
+#### 6.6 Crear WebSocketService
+**Archivo:** `lib/data/services/websocket_service.dart`
+- Usar `web_socket_channel` package
+- Auto-reconexión con backoff
+
+#### 6.7 Actualizar SettingsBloc
+- Agregar autoSync y syncOnWifi a AppSettings
+
+#### 6.8 Actualizar SessionBloc
+- Integración con SyncBloc post-sesión
+
+### Dependencias a Agregar
+```yaml
+web_socket_channel: ^2.4.0
+http: ^1.1.0
+```
+
+---
+
+## 📍 FASE 7: UI Principal - Sesiones (Estimado 3 días)
+
+### Objetivos
+- [ ] HomePage mejorada
+- [ ] SessionsListPage funcional
+- [ ] SessionSummaryPage con gráficos
+- [ ] Integración de datos
+
+### Tareas Detalladas
+
+#### 7.1 Mejorar HomePage
+**Archivo:** `lib/presentation/pages/home_page.dart`
+- CurrentSessionCard (sesión activa actual)
+- StatsCard (últimas métricas)
+- QuickStartButton (ir a SessionActivePage)
+- RecentSessionsList (últimas 3 sesiones)
+- Verificar permisos en onInit
+
+#### 7.2 Implementar SessionsListPage
+**Archivo:** `lib/presentation/pages/sessions_page.dart`
+- SessionListTile mejorado con thumbnail, distancia, duración, velocidad
+- Filtros: por tipo (paddling/cycling), por fecha
+- Búsqueda por texto
+- Pull-to-refresh
+- Delete con confirmación
+- Tap → SessionSummaryPage
+
+#### 7.3 Crear SessionSummaryPage mejorada
+**Archivo:** `lib/presentation/pages/session_summary_page.dart`
+- Tabs: Overview, Gráficos, Mapa, Splits, Zonas
+- Overview: distancia, duración, vel min/max/avg
+- Gráficos: velocidad vs tiempo (line chart)
+- Mapa: ruta con polyline
+- Splits: table con tiempo/distancia/ritmo
+- Zonas: HR zones con colores y % tiempo
+- Botones: Compartir, Editar, Borrar, Descargar
+
+#### 7.4 Crear ChartWidgets
+**Archivo:** `lib/presentation/widgets/chart_widgets.dart`
+- SpeedChart (fl_chart line chart)
+- HeartRateChart (con zonas coloreadas)
+- DistanceChart (bar chart)
+- SplitsTable (DataTable)
+
+#### 7.5 Integrar Maps
+**Archivo:** `lib/presentation/widgets/session_map.dart`
+- flutter_map o google_maps_flutter
+- Ruta de GPS points
+- Markers inicio/fin
+- Polyline
+
+#### 7.6 Crear NotesModel
+- Agregar tabla `notes` en DatabaseService
+- Campo notes en Session model
+- UI para editar notas en SessionSummaryPage
+
+### Dependencias a Agregar
+```yaml
+fl_chart: ^0.63.0
+flutter_map: ^4.0.0
+intl: ^0.20.2
+```
+
+---
+
+## 📍 FASE 8: UI Principal - Configuración (Estimado 2 días)
+
+### Objetivos
+- [ ] SettingsPage completa funcional
+- [ ] CalibrationPage para sensores
+- [ ] ChooseBoatPage y ChooseSportPage
+- [ ] ProfilePage de usuario
+
+### Tareas Detalladas
+
+#### 8.1 Implementar SettingsPage completa
+**Archivo:** `lib/presentation/pages/settings_page.dart`
+- Secciones: Perfil, Preferencias, Sesiones, Sync, Bluetooth, Información, Acerca de
+- Preferencias: idioma, tema, unidades (km/millas)
+- Sesiones: frecuencia GPS, tipo bote, deporte
+- Sincronización: auto-sync, WiFi only, último sync, botón sincronizar
+- Bluetooth: dispositivos emparejados, botón escanear
+
+#### 8.2 Implementar CalibrationPage
+**Archivo:** `lib/presentation/pages/calibration_page.dart`
+- Calibración de acelerómetro, GPS, HR, cadencia
+- Botón "Reset a valores por defecto"
+- Instrucciones por sensor
+
+#### 8.3 Crear ChooseBoatPage
+**Archivo:** `lib/presentation/pages/choose_boat_page.dart`
+- Opciones: Single kayak, Double kayak, Canoe, Dragon boat, SUP, Outrigger canoe
+- Grid con iconos y selección
+
+#### 8.4 Crear ChooseSportPage
+**Archivo:** `lib/presentation/pages/choose_sport_page.dart`
+- Opciones: Paddling, Cycling
+- Afecta métricas mostradas
+
+#### 8.5 Crear ProfilePage
+**Archivo:** `lib/presentation/pages/profile_page.dart`
+- Avatar, nombre, correo, estadísticas acumulativas
+- Botón editar y cerrar sesión
+
+#### 8.6 Crear UserModel
+**Archivo:** `lib/data/models/user_model.dart`
+- Campos: id, name, email, profileImageUrl, preferredUnit, boatType, sportType
+- Serialización completa
+
+#### 8.7 Crear UserRepository
+**Archivo:** `lib/data/repositories/user_repository.dart`
+- CRUD para usuario
+- Integración con SharedPreferences
+
+#### 8.8 Actualizar SettingsBloc
+- Eventos: UpdateUserProfileEvent, UpdateBoatTypeEvent, UpdateSportTypeEvent
+- Persistencia con SharedPreferences
+
+### Dependencias a Agregar
+```yaml
+shared_preferences: ^2.2.0
+image_picker: ^1.0.0
+```
+
+---
+
+## 📍 FASE 9: Características Avanzadas (Estimado 2 días)
+
+### Objetivos
+- [ ] Gráficos y análisis avanzados
+- [ ] Splits y intervalos
+- [ ] Zonas de entrenamiento
+- [ ] Coach profiles (opcional)
+
+### Tareas Detalladas
+
+#### 9.1 Crear AnalyticsService
+**Archivo:** `lib/domain/services/analytics_service.dart`
+- Cálculos: promedio móvil, esfuerzos máximos, distribución zonas HR, tendencias
+- Métodos: calculateSessionStats, calculateZoneDistribution, getTrendAnalysis, compare
+
+#### 9.2 Mejorar SplitsFeature
+**Archivo:** `lib/domain/models/split.dart`
+- Nombre/descripción de split
+- Cálculos: pace, cadencia promedio
+
+#### 9.3 Crear TrainingZonesModel
+**Archivo:** `lib/domain/models/training_zones.dart`
+- Zonas: recovery, aerobic, threshold, vo2max, anaerobic
+- Cálculo automático basado en max HR
+- Porcentaje de tiempo por zona
+
+#### 9.4 Mejorar SessionSummaryPage
+- Tab de análisis
+- Eficiencia del entrenamiento (score)
+- Esfuerzos máximos detectados
+- Recomendaciones
+- Comparativa con sesión previa
+
+#### 9.5 Crear CoachProfilesPage (opcional)
+**Archivo:** `lib/presentation/pages/coach_profiles_page.dart`
+- Perfiles de coach
+- Entrenamientos recomendados
+
+#### 9.6 Integración Strava Enhanced
+- Auto-sync post-sesión
+- Compartir en redes sociales
+
+---
+
+## 📍 FASE 10: Testing Automatizado (Estimado 1.5 días)
+
+### Objetivos
+- [ ] Unit tests de servicios y BLoCs
+- [ ] Widget tests de UI crítica
+- [ ] Integration tests end-to-end
+
+### Tareas Detalladas
+
+#### 10.1 Unit Tests
+**Carpeta:** `test/`
+- test/data/services/: location_service, bluetooth_service, database_service, sync_service
+- test/domain/services/: stroke_detector, analytics_service
+- test/presentation/bloc/: session_bloc, gps_bloc, bluetooth_bloc, settings_bloc
+
+Cobertura mínima: 70%
+
+#### 10.2 Widget Tests
+**Carpeta:** `test/presentation/pages/`
+- home_page_test.dart
+- session_active_page_test.dart
+- session_summary_page_test.dart
+- settings_page_test.dart
+
+#### 10.3 Integration Tests
+**Carpeta:** `integration_test/`
+- app_test.dart: flujo completo sesión (permisos → start → tracking → stop → save)
+
+### Dependencias
+```yaml
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mockito: ^5.4.0
+  bloc_test: ^9.1.0
+```
+
+### Ejecución
+```bash
+flutter test                        # All tests
+flutter test --coverage             # Coverage report
+flutter drive --target=integration_test/app_test.dart
+```
+
+---
+
+## 📍 FASE 11: Build & Release (Estimado 1.5 días)
+
+### Objetivos
+- [ ] APK release para Android
+- [ ] App Bundle para Google Play
+- [ ] IPA para iOS
+- [ ] Documentación de release
+
+### Tareas Detalladas
+
+#### 11.1 Preparación Pre-Release
+**Modificar:** `pubspec.yaml`
+- Version: 1.0.0+1
+- Description y autor
+
+**Modificar:** `android/app/build.gradle`
+- applicationId (ej: com.gopaddler.app)
+- versionCode y versionName
+- minSdkVersion: 21+
+
+#### 11.2 Build APK
+```bash
+flutter build apk --release
+flutter build apk --split-per-abi
+```
+
+#### 11.3 Build App Bundle
+```bash
+flutter build appbundle --release
+```
+
+#### 11.4 Firma de APK/Bundle
+**Crear keystore:**
+```bash
+keytool -genkey -v -keystore ~/key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias gopaddler
+```
+
+**Configurar** `android/key.properties`:
+```properties
+storePassword=<password>
+keyPassword=<password>
+keyAlias=gopaddler
+storeFile=/path/to/key.jks
+```
+
+#### 11.5 iOS Build (requiere Mac)
+```bash
+flutter build ios --release
+cd ios
+xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -derivedDataPath build -arch arm64
+```
+
+#### 11.6 Configuración Google Play Store
+- Crear cuenta Google Play Developer ($25)
+- Subir App Bundle
+- Store listing: screenshots, descripción
+- Privacidad y permisos
+
+#### 11.7 Configuración Apple App Store
+- Crear Apple Developer account
+- TestFlight
+- App store listing
+
+#### 11.8 Documentación de Release
+**Crear:** `RELEASE_NOTES.md`
+- Historial versiones
+- Features principales
+- Bug fixes
+- Requisitos: Android 5.0+, iOS 12+
+
+#### 11.9 Performance Optimization
+```bash
+flutter build apk --split-debug-info=symbols/
+flutter pub run devtools_extensions
+```
+
+#### 11.10 Setup CI/CD (GitHub Actions - opcional)
+**Crear:** `.github/workflows/build.yml`
+- Trigger: push a main
+- Build automático
+- Tests
+- Upload a Play Store
+
+### Checklist Final
+- [ ] flutter analyze: 0 errores críticos
+- [ ] flutter test: 70%+ cobertura
+- [ ] APK testeado en device real
+- [ ] IPA generado (si es posible)
+- [ ] Cuentas Google Play y AppStore creadas
+- [ ] RELEASE_NOTES.md completado
+- [ ] Version actualizada
+- [ ] Privacy policy y ToS listos
+
+---
+
 ## 🔄 Actualizar Plan Conforme Avances
 
 Cuando termines cada FASE:
 
-1. Actualiza el `MIGRATION_PLAN.md` con el checkbox
+1. Actualiza este documento con checkboxes completados
 2. Commit con mensaje descriptivo:
    ```bash
    git add -A
@@ -307,20 +739,22 @@ flutter build appbundle --release  # Para Google Play
 
 ---
 
-## 📊 Timeline Estimado
+## 📊 Timeline Estimado - Actualizado
 
 | Fase | Duración | Estado |
 |------|----------|--------|
 | 1. Preparación | 1 día | ✅ COMPLETADA |
 | 2. Arquitectura Base | 2 días | ✅ COMPLETADA |
 | 3. Base de Datos | 1 día | ✅ COMPLETADA |
-| 4. GPS & Tracking | 2 días | ⏭️ Próxima |
-| 5. Bluetooth & Sensores | 2 días | ⏺️ Pendiente |
+| 4. GPS & Tracking | 2 días | ✅ COMPLETADA |
+| 5. Bluetooth & Sensores | 2 días | ⏺️ **PRÓXIMA** |
 | 6. Sincronización | 1 día | ⏺️ Pendiente |
-| 7-8. UI Principal | 5 días | ⏺️ Pendiente |
-| 9. Features Avanzadas | 2 días | ⏺️ Pendiente |
-| 10-11. Testing & Release | 3 días | ⏺️ Pendiente |
-| **TOTAL** | **19 días** | ⏳ En progreso (Fase 3 completada)
+| 7. UI - Sesiones | 3 días | ⏺️ Pendiente |
+| 8. UI - Configuración | 2 días | ⏺️ Pendiente |
+| 9. Características Avanzadas | 2 días | ⏺️ Pendiente |
+| 10. Testing Automatizado | 1.5 días | ⏺️ Pendiente |
+| 11. Build & Release | 1.5 días | ⏺️ Pendiente |
+| **TOTAL** | **19 días** | ⏳ En progreso (4/11 completadas)
 
 ---
 
