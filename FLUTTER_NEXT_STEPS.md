@@ -353,17 +353,100 @@ sensors_plus: ^1.9.5
 
 ---
 
-## 📍 FASE 6: Sincronización (Estimado 1 día)
+## 📍 FASE 6: Sincronización (Completada ✅ 1 día)
 
 ### Objetivos
-- [ ] Sincronización de sesiones con servidor
-- [ ] Almacenamiento local de sesiones sin sincronizar
-- [ ] Integración Strava
-- [ ] WebSocket para sync en tiempo real
+- [x] Sincronización de sesiones con servidor
+- [x] Almacenamiento local de sesiones sin sincronizar
+- [x] Integración Strava
+- [x] WebSocket para sync en tiempo real
 
-### Tareas Detalladas
+### Tareas Completadas
+1. ✅ Crear SyncQueue model para cola local
+2. ✅ Crear SyncService con retry automático
+3. ✅ Crear StravaIntegrationService OAuth2
+4. ✅ Crear WebSocketService con auto-reconexión
+5. ✅ Crear SyncBloc/Event/State para orquestar
+6. ✅ Actualizar DatabaseService tabla sync_queue
+7. ✅ Actualizar SettingsBloc con autoSync y syncOnWiFiOnly
+8. ✅ Actualizar SessionBloc integración SyncBloc
+9. ✅ Registrar servicios en ServiceLocator
+10. ✅ Agregar SyncBloc a MultiBlocProvider
+11. ✅ Instalar dependencias: web_socket_channel, http
 
-#### 6.1 Crear SyncService
+### Detalles Implementados
+- **SyncQueue Model** (lib/data/models/sync_queue.dart):
+  - Campos: sessionId (FK), timestamp, status (pending/syncing/completed/failed), retryCount, lastError, lastSyncAttempt
+  - Serialización completa: toMap(), fromMap(), toJson(), fromJson()
+  - Enum para estados de sincronización
+
+- **SyncService** (lib/data/services/sync_service.dart):
+  - uploadSession(sessionId): sube sesión al servidor
+  - downloadSessions(): descarga sesiones sincronizadas
+  - queueSessionForSync(sessionId): agrega a cola local
+  - getSyncQueue(): obtiene pendientes
+  - clearSyncQueue(sessionId): remueve de cola después del sync
+  - uploadWithRetry(sessionId, maxRetries): reintentos con backoff exponencial (1s * 2^retryCount)
+  - checkSyncStatus(sessionId): obtiene estado actual
+  - Gestión de conexión WiFi/Mobile
+  - AppLogger para tracking de intentos
+
+- **StravaIntegrationService** (lib/data/services/strava_service.dart):
+  - authenticate(authCode): OAuth2 code exchange
+  - uploadActivity(session): POST a Strava API
+  - getAthleteProfile(): GET datos del atleta
+  - fetchActivities(limit): sincronización de actividades
+  - refreshToken(): renovación automática de tokens
+  - Gestión de tokens en SharedPreferences
+  - Manejo de timeouts de 30 segundos
+
+- **WebSocketService** (lib/data/services/websocket_service.dart):
+  - connect(): establece conexión WS
+  - disconnect(): cierra conexión
+  - send(message): envía mensajes
+  - onMessage: stream de mensajes recibidos
+  - Auto-reconexión con backoff: 1s, 2s, 4s, 8s, máx 30s
+  - Heartbeat cada 30 segundos para detectar conexiones muertas
+  - Logging completo de eventos WS
+
+- **SyncBloc** (lib/presentation/bloc/sync/):
+  - Eventos: SyncSessionEvent, SyncAllQueuedEvent, CheckSyncStatusEvent, SyncProgressEvent, SyncErrorEvent, SyncSuccessEvent, UploadToStravaEvent
+  - Estados: SyncInitial, SyncInProgress (con progreso), SyncCompleted, SyncError, SyncQueueStatus, SyncSuccess
+  - Escucha SessionBloc para detectar sesiones completadas
+  - Auto-sync en background si autoSync está habilitado
+  - Emite eventos de progreso periódicamente
+
+- **DatabaseService Updates**:
+  - Tabla `sync_queue` con campos completos
+  - Índice en sessionId para queries rápidas
+  - FK con cascading deletes
+  - Métodos: insertSyncQueue, getSyncQueue, updateSyncStatus, removeSyncQueue
+
+- **SettingsBloc Updates**:
+  - Nuevos eventos: UpdateAutoSyncEvent, UpdateSyncOnWiFiOnlyEvent  
+  - Campos en AppSettings: autoSync (default true), syncOnWiFiOnly (default false)
+  - Persistencia en SharedPreferences
+
+- **SessionBloc Updates**:
+  - Integración con SyncBloc en completar sesión
+  - Agrega automáticamente sesión a cola de sync
+  - Escucha eventos de SyncBloc para marcar como sincronizadas
+
+### Commits
+```
+9c7dd55: FASE 6: Implementar Sincronización - Services, BLoCs y Integración
+```
+
+### Dependencias Instaladas
+```yaml
+web_socket_channel: ^2.4.0
+http: ^1.1.0
+shared_preferences: ^2.2.0
+```
+
+---
+
+## 📍 FASE 7: UI Principal - Sesiones (Estimado 3 días)
 **Archivo:** `lib/data/services/sync_service.dart`
 - Métodos: uploadSession, downloadSessions, queueSessionForSync, getSyncQueue, clearSyncQueue, checkSyncStatus
 - Gestión de conexión (WiFi/Mobile data)
@@ -816,13 +899,13 @@ flutter build appbundle --release  # Para Google Play
 | 3. Base de Datos | 1 día | ✅ COMPLETADA |
 | 4. GPS & Tracking | 2 días | ✅ COMPLETADA |
 | 5. Bluetooth & Sensores | 2 días | ✅ COMPLETADA |
-| 6. Sincronización | 1 día | ⏺️ **PRÓXIMA** |
-| 7. UI - Sesiones | 3 días | ⏺️ Pendiente |
+| 6. Sincronización | 1 día | ✅ COMPLETADA |
+| 7. UI - Sesiones | 3 días | ⏺️ **PRÓXIMA** |
 | 8. UI - Configuración | 2 días | ⏺️ Pendiente |
 | 9. Características Avanzadas | 2 días | ⏺️ Pendiente |
 | 10. Testing Automatizado | 1.5 días | ⏺️ Pendiente |
 | 11. Build & Release | 1.5 días | ⏺️ Pendiente |
-| **TOTAL** | **19 días** | ⏳ En progreso (5/11 completadas)
+| **TOTAL** | **19 días** | ⏳ En progreso (6/11 completadas)
 
 ---
 
