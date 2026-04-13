@@ -73,6 +73,6 @@ class LoadSessionEvent extends SessionEvent {
   List<Object?> get props => [sessionId];
 }
 
-class SyncSessionEvent extends SessionEvent {
-  const SyncSessionEvent();
+class RequestSessionSyncEvent extends SessionEvent {
+  const RequestSessionSyncEvent();
 }

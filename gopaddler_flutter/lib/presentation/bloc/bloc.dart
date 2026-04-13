@@ -3,3 +3,4 @@ export 'settings/settings_bloc.dart';
 export 'gps/gps_bloc.dart';
 export 'bluetooth/bluetooth_bloc.dart';
 export 'heart_rate/heart_rate_bloc.dart';
+export 'sync/sync_bloc.dart';

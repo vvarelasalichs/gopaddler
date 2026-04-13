@@ -4,6 +4,8 @@ class EnvironmentConfig {
   final Environment environment;
   final String apiBaseUrl;
   final String apiKey;
+  final String stravaClientId;
+  final String stravaClientSecret;
   final bool enableLogging;
   final bool enableCrashlytics;
   final String appName;
@@ -13,6 +15,8 @@ class EnvironmentConfig {
     required this.environment,
     required this.apiBaseUrl,
     required this.apiKey,
+    required this.stravaClientId,
+    required this.stravaClientSecret,
     required this.enableLogging,
     required this.enableCrashlytics,
     required this.appName,
@@ -24,6 +28,8 @@ class EnvironmentConfig {
       environment: Environment.development,
       apiBaseUrl: 'http://localhost:3000/api',
       apiKey: 'dev-key-12345',
+      stravaClientId: 'dev-strava-id',
+      stravaClientSecret: 'dev-strava-secret',
       enableLogging: true,
       enableCrashlytics: false,
       appName: 'GoPaddler Dev',
@@ -36,6 +42,8 @@ class EnvironmentConfig {
       environment: Environment.staging,
       apiBaseUrl: 'https://staging-api.uttercoach.com/api',
       apiKey: 'staging-key-12345',
+      stravaClientId: 'staging-strava-id',
+      stravaClientSecret: 'staging-strava-secret',
       enableLogging: true,
       enableCrashlytics: true,
       appName: 'GoPaddler Staging',
@@ -46,8 +54,10 @@ class EnvironmentConfig {
   factory EnvironmentConfig.production() {
     return const EnvironmentConfig(
       environment: Environment.production,
-      apiBaseUrl: 'https://api.uttercoach.com/api',
+      apiBaseUrl: 'https://api.gopaddler.com/api',
       apiKey: 'prod-key-12345',
+      stravaClientId: 'prod-strava-id',
+      stravaClientSecret: 'prod-strava-secret',
       enableLogging: false,
       enableCrashlytics: true,
       appName: 'GoPaddler',

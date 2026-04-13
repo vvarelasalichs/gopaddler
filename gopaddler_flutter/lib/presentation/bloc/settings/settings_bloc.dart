@@ -13,6 +13,8 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<UpdateThemeEvent>(_onUpdateTheme);
     on<UpdateGpsRateEvent>(_onUpdateGpsRate);
     on<UpdateUserProfileEvent>(_onUpdateUserProfile);
+    on<UpdateAutoSyncEvent>(_onUpdateAutoSync);
+    on<UpdateSyncOnWiFiOnlyEvent>(_onUpdateSyncOnWiFiOnly);
   }
 
   Future<void> _onLoadSettings(
@@ -80,6 +82,32 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       emit(SettingsUpdated(_settings));
     } catch (e) {
       emit(SettingsError('Error updating profile: $e'));
+    }
+  }
+
+  Future<void> _onUpdateAutoSync(
+    UpdateAutoSyncEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    try {
+      _settings = _settings.copyWith(autoSync: event.enabled);
+      // TODO: Persistir cambios
+      emit(SettingsUpdated(_settings));
+    } catch (e) {
+      emit(SettingsError('Error updating auto sync: $e'));
+    }
+  }
+
+  Future<void> _onUpdateSyncOnWiFiOnly(
+    UpdateSyncOnWiFiOnlyEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    try {
+      _settings = _settings.copyWith(syncOnWiFiOnly: event.wifiOnly);
+      // TODO: Persistir cambios
+      emit(SettingsUpdated(_settings));
+    } catch (e) {
+      emit(SettingsError('Error updating sync WiFi setting: $e'));
     }
   }
 }

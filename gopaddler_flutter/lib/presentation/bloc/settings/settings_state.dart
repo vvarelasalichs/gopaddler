@@ -6,6 +6,8 @@ class AppSettings extends Equatable {
   final int gpsIntervalSeconds;
   final String? userName;
   final String? userEmail;
+  final bool autoSync;
+  final bool syncOnWiFiOnly;
 
   const AppSettings({
     this.languageCode = 'en',
@@ -13,6 +15,8 @@ class AppSettings extends Equatable {
     this.gpsIntervalSeconds = 5,
     this.userName,
     this.userEmail,
+    this.autoSync = true,
+    this.syncOnWiFiOnly = false,
   });
 
   AppSettings copyWith({
@@ -21,6 +25,8 @@ class AppSettings extends Equatable {
     int? gpsIntervalSeconds,
     String? userName,
     String? userEmail,
+    bool? autoSync,
+    bool? syncOnWiFiOnly,
   }) {
     return AppSettings(
       languageCode: languageCode ?? this.languageCode,
@@ -28,6 +34,8 @@ class AppSettings extends Equatable {
       gpsIntervalSeconds: gpsIntervalSeconds ?? this.gpsIntervalSeconds,
       userName: userName ?? this.userName,
       userEmail: userEmail ?? this.userEmail,
+      autoSync: autoSync ?? this.autoSync,
+      syncOnWiFiOnly: syncOnWiFiOnly ?? this.syncOnWiFiOnly,
     );
   }
 
@@ -38,6 +46,8 @@ class AppSettings extends Equatable {
         gpsIntervalSeconds,
         userName,
         userEmail,
+        autoSync,
+        syncOnWiFiOnly,
       ];
 }
 

@@ -2,14 +2,19 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 import '../../../data/models/session.dart';
+import '../../../data/services/sync_service.dart';
+import '../../../utils/app_logger.dart';
 
 part 'session_event.dart';
 part 'session_state.dart';
 
 class SessionBloc extends Bloc<SessionEvent, SessionState> {
   Session? _currentSession;
+  final SyncService? _syncService;
 
-  SessionBloc() : super(const SessionInitial()) {
+  SessionBloc({SyncService? syncService})
+      : _syncService = syncService,
+        super(const SessionInitial()) {
     on<StartSessionEvent>(_onStartSession);
     on<StopSessionEvent>(_onStopSession);
     on<PauseSessionEvent>(_onPauseSession);
@@ -17,7 +22,7 @@ class SessionBloc extends Bloc<SessionEvent, SessionState> {
     on<AddGpsPointEvent>(_onAddGpsPoint);
     on<UpdateMeasurementEvent>(_onUpdateMeasurement);
     on<LoadSessionEvent>(_onLoadSession);
-    on<SyncSessionEvent>(_onSyncSession);
+    on<RequestSessionSyncEvent>(_onSyncSession);
   }
 
   Future<void> _onStartSession(
@@ -60,6 +65,23 @@ class SessionBloc extends Bloc<SessionEvent, SessionState> {
         totalDistance: distance,
         averageSpeed: avgSpeed,
       ));
+
+      // Queue session for synchronization
+      if (_syncService != null && _currentSession != null) {
+        try {
+          await _syncService!.queueSessionForSync(_currentSession!.id);
+          AppLogger.info(
+            'Session queued for sync: ${_currentSession!.id}',
+            tag: 'SessionBloc',
+          );
+        } catch (e) {
+          AppLogger.error(
+            'Failed to queue session for sync',
+            tag: 'SessionBloc',
+            exception: e,
+          );
+        }
+      }
 
       _currentSession = null;
     } catch (e) {
@@ -170,7 +192,7 @@ class SessionBloc extends Bloc<SessionEvent, SessionState> {
   }
 
   Future<void> _onSyncSession(
-    SyncSessionEvent event,
+    RequestSessionSyncEvent event,
     Emitter<SessionState> emit,
   ) async {
     try {

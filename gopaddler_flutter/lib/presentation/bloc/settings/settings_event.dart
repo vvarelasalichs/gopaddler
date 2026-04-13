@@ -50,3 +50,21 @@ class UpdateUserProfileEvent extends SettingsEvent {
   @override
   List<Object?> get props => [name, email];
 }
+
+class UpdateAutoSyncEvent extends SettingsEvent {
+  final bool enabled;
+
+  const UpdateAutoSyncEvent(this.enabled);
+
+  @override
+  List<Object?> get props => [enabled];
+}
+
+class UpdateSyncOnWiFiOnlyEvent extends SettingsEvent {
+  final bool wifiOnly;
+
+  const UpdateSyncOnWiFiOnlyEvent(this.wifiOnly);
+
+  @override
+  List<Object?> get props => [wifiOnly];
+}

@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/session.dart';
+import '../models/sync_queue.dart';
 import '../../utils/app_logger.dart';
 
 class DatabaseService {
@@ -40,6 +41,16 @@ class DatabaseService {
   static const String colValue = 'value';
   static const String colUnit = 'unit';
   static const String colTimestamp2 = 'timestamp';
+
+  // Tabla sync_queue
+  static const String tableSyncQueue = 'sync_queue';
+  static const String colSyncQueueId = 'id';
+  static const String colSyncSessionId = 'sessionId';
+  static const String colSyncTimestamp = 'timestamp';
+  static const String colSyncStatus = 'status';
+  static const String colSyncRetryCount = 'retryCount';
+  static const String colSyncLastError = 'lastError';
+  static const String colSyncLastAttempt = 'lastSyncAttempt';
 
   static Database? _database;
 
@@ -117,6 +128,25 @@ class DatabaseService {
         'CREATE INDEX idx_sessionId2 ON $tableMeasurement($colSessionId3)');
     await db
         .execute('CREATE INDEX idx_startTime ON $tableSession($colStartTime)');
+
+    // Crear tabla de sync_queue
+    await db.execute('''
+      CREATE TABLE $tableSyncQueue (
+        $colSyncQueueId INTEGER PRIMARY KEY AUTOINCREMENT,
+        $colSyncSessionId TEXT NOT NULL UNIQUE,
+        $colSyncTimestamp INTEGER NOT NULL,
+        $colSyncStatus TEXT NOT NULL,
+        $colSyncRetryCount INTEGER DEFAULT 0,
+        $colSyncLastError TEXT,
+        $colSyncLastAttempt INTEGER,
+        FOREIGN KEY ($colSyncSessionId) REFERENCES $tableSession($colSessionId) ON DELETE CASCADE
+      )
+    ''');
+
+    await db.execute(
+        'CREATE INDEX idx_syncStatus ON $tableSyncQueue($colSyncStatus)');
+    await db.execute(
+        'CREATE INDEX idx_syncSessionId ON $tableSyncQueue($colSyncSessionId)');
 
     AppLogger.info('Database tables created successfully',
         tag: 'DatabaseService');
@@ -336,6 +366,7 @@ class DatabaseService {
       final db = await database;
       await db.delete(tableMeasurement);
       await db.delete(tableGpsPoint);
+      await db.delete(tableSyncQueue);
       await db.delete(tableSession);
       AppLogger.warning('All database data cleared', tag: 'DatabaseService');
     } catch (e) {
@@ -345,6 +376,171 @@ class DatabaseService {
         exception: e,
       );
       rethrow;
+    }
+  }
+
+  // CRUD Operations para Sync Queue
+
+  /// Insert a session into the sync queue
+  Future<void> insertSyncQueue(String sessionId) async {
+    try {
+      final db = await database;
+      await db.insert(
+        tableSyncQueue,
+        {
+          colSyncSessionId: sessionId,
+          colSyncTimestamp: DateTime.now().millisecondsSinceEpoch,
+          colSyncStatus: SyncStatus.pending.name,
+          colSyncRetryCount: 0,
+        },
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+      AppLogger.debug('Added to sync queue: $sessionId',
+          tag: 'DatabaseService');
+    } catch (e) {
+      AppLogger.error(
+        'Error inserting into sync queue',
+        tag: 'DatabaseService',
+        exception: e,
+      );
+      rethrow;
+    }
+  }
+
+  /// Get all pending sync queue items
+  Future<List<SyncQueue>> getSyncQueue() async {
+    try {
+      final db = await database;
+      final maps = await db.query(
+        tableSyncQueue,
+        where: '$colSyncStatus != ?',
+        whereArgs: [SyncStatus.completed.name],
+        orderBy: '$colSyncTimestamp ASC',
+      );
+
+      return maps.map((map) => SyncQueue.fromMap(map)).toList();
+    } catch (e) {
+      AppLogger.error(
+        'Error getting sync queue',
+        tag: 'DatabaseService',
+        exception: e,
+      );
+      rethrow;
+    }
+  }
+
+  /// Get a specific sync queue item
+  Future<SyncQueue?> getSyncQueueItem(String sessionId) async {
+    try {
+      final db = await database;
+      final maps = await db.query(
+        tableSyncQueue,
+        where: '$colSyncSessionId = ?',
+        whereArgs: [sessionId],
+      );
+
+      if (maps.isEmpty) {
+        return null;
+      }
+
+      return SyncQueue.fromMap(maps.first);
+    } catch (e) {
+      AppLogger.error(
+        'Error getting sync queue item',
+        tag: 'DatabaseService',
+        exception: e,
+      );
+      rethrow;
+    }
+  }
+
+  /// Update sync status and error information
+  Future<void> updateSyncStatus(
+    String sessionId,
+    SyncStatus status,
+    String? error,
+  ) async {
+    try {
+      final db = await database;
+
+      // Get current retry count
+      final maps = await db.query(
+        tableSyncQueue,
+        where: '$colSyncSessionId = ?',
+        whereArgs: [sessionId],
+      );
+
+      int retryCount = 0;
+      if (maps.isNotEmpty) {
+        retryCount = (maps.first[colSyncRetryCount] as int?) ?? 0;
+        if (status == SyncStatus.retry || status == SyncStatus.failed) {
+          retryCount++;
+        }
+      }
+
+      await db.update(
+        tableSyncQueue,
+        {
+          colSyncStatus: status.name,
+          colSyncLastError: error,
+          colSyncLastAttempt: DateTime.now().millisecondsSinceEpoch,
+          colSyncRetryCount: retryCount,
+        },
+        where: '$colSyncSessionId = ?',
+        whereArgs: [sessionId],
+      );
+      AppLogger.debug(
+        'Sync status updated: $sessionId -> ${status.name}',
+        tag: 'DatabaseService',
+      );
+    } catch (e) {
+      AppLogger.error(
+        'Error updating sync status',
+        tag: 'DatabaseService',
+        exception: e,
+      );
+      rethrow;
+    }
+  }
+
+  /// Remove a session from the sync queue
+  Future<void> removeSyncQueue(String sessionId) async {
+    try {
+      final db = await database;
+      await db.delete(
+        tableSyncQueue,
+        where: '$colSyncSessionId = ?',
+        whereArgs: [sessionId],
+      );
+      AppLogger.debug('Removed from sync queue: $sessionId',
+          tag: 'DatabaseService');
+    } catch (e) {
+      AppLogger.error(
+        'Error removing from sync queue',
+        tag: 'DatabaseService',
+        exception: e,
+      );
+      rethrow;
+    }
+  }
+
+  /// Get count of pending sync items
+  Future<int> getPendingSyncCount() async {
+    try {
+      final db = await database;
+      final result = await db.rawQuery(
+        'SELECT COUNT(*) as count FROM $tableSyncQueue '
+        'WHERE $colSyncStatus = ?',
+        [SyncStatus.pending.name],
+      );
+      return Sqflite.firstIntValue(result) ?? 0;
+    } catch (e) {
+      AppLogger.error(
+        'Error getting pending sync count',
+        tag: 'DatabaseService',
+        exception: e,
+      );
+      return 0;
     }
   }
 
