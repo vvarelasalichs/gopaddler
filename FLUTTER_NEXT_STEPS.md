@@ -216,15 +216,83 @@ e57686f: FASE 4: Crear GpsBloc para orquestar LocationService
 
 ---
 
-## 📍 FASE 5: Bluetooth & Sensores (Estimado 2 días)
+## 📍 FASE 5: Bluetooth & Sensores (Completada ✅ 2 días)
 
 ### Objetivos
-- [ ] Conectividad Bluetooth BLE funcional
-- [ ] Lectura de sensores (acelerómetro/giroscopio)
-- [ ] Sincronización de dispositivos BLE
-- [ ] UI para gestión de dispositivos
+- [x] Conectividad Bluetooth BLE funcional
+- [x] Lectura de sensores (acelerómetro/giroscopio)
+- [x] Sincronización de dispositivos BLE
+- [x] UI para gestión de dispositivos
 
-### Tareas Detalladas
+### Tareas Completadas
+1. ✅ Crear BluetoothService con flutter_blue_plus
+2. ✅ Crear BluetoothBloc/Event/State para orquestar BLE
+3. ✅ Crear HeartRateBloc/Event/State con zonas HR
+4. ✅ Crear SensorService para acelerómetro/giroscopio
+5. ✅ Implementar BluetoothPage UI mejorada
+6. ✅ Integrar GpsBloc + BluetoothBloc para metrics en tiempo real
+7. ✅ Actualizar SessionActivePage con HR y cadencia
+8. ✅ Registrar servicios en ServiceLocator
+9. ✅ Agregar BLoCs a MultiBlocProvider
+10. ✅ Instalar dependencias: flutter_blue_plus, sensors_plus
+
+### Detalles Implementados
+- **BluetoothService** (lib/data/services/bluetooth_service.dart):
+  - Métodos: requestPermissions(), startScan(), stopScan(), connectDevice(), disconnectDevice()
+  - Streams: subscribeToHeartRate(), subscribeToCadence()
+  - Manejo de dispositivos BLE con flutter_blue_plus
+  - Control de permisos y errores con AppLogger
+  
+- **BluetoothBloc** (lib/presentation/bloc/bluetooth/):
+  - Eventos: RequestBluetoothPermissionsEvent, StartBluetoothScanEvent, StopBluetoothScanEvent, ConnectDeviceEvent, DisconnectDeviceEvent, BluetoothDeviceFoundEvent, HeartRateReceivedEvent, CadenceReceivedEvent, BluetoothErrorEvent
+  - Estados: BluetoothInitial, BluetoothPermissionRequesting, BluetoothPermissionDenied, BluetoothPermissionGranted, BluetoothScanning, BluetoothConnecting, BluetoothConnected, BluetoothDisconnected, BluetoothError
+  - Orquestación completa de BluetoothService
+  
+- **HeartRateBloc** (lib/presentation/bloc/heart_rate/):
+  - Eventos: HeartRateUpdatedEvent, HeartRateThresholdReachedEvent
+  - Estados: HeartRateInitial, HeartRateMonitoring (con bpm, zona, avg, min, max), HeartRateError
+  - Cálculo automático de zonas de entrenamiento (recovery, aerobic, threshold, vo2max)
+  - Estadísticas en tiempo real
+  
+- **SensorService** (lib/data/services/sensor_service.dart):
+  - Streams de acelerómetro (x, y, z)
+  - Streams de giroscopio
+  - Integración con sensors_plus package
+  - Control de vida útil de streams
+  
+- **BluetoothPage UI** (lib/presentation/pages/bluetooth_page.dart):
+  - Solicitud de permisos BLE
+  - Interfaz de escaneo con lista de dispositivos
+  - Lista de dispositivos conectados
+  - Indicadores de señal (RSSI)
+  - Botones de conectar/desconectar
+  - Visualización de HR y cadencia en tiempo real
+  
+- **Integración GpsBloc + HeartRateBloc**:
+  - GpsTracking state ahora incluye heartRate y cadence opcionales
+  - SessionActivePage muestra métricas HR y cadencia durante GPS tracking
+  - Combinación de GPS + sensores biométricos para análisis completo
+
+### Commits  
+```
+7b72651: FASE 5: Implementar Bluetooth & Sensores - BLoCs, Services, UI integrada
+```
+
+### Dependencias Instaladas
+```yaml
+flutter_blue_plus: ^1.29.5
+sensors_plus: ^1.9.5
+```
+
+---
+
+## 📍 FASE 6: Sincronización (Estimado 1 día)
+
+### Objetivos
+- [ ] Sincronización de sesiones con servidor
+- [ ] Almacenamiento local de sesiones sin sincronizar
+- [ ] Integración Strava
+- [ ] WebSocket para sync en tiempo real
 
 #### 5.1 Crear BluetoothService
 **Archivo:** `lib/data/services/bluetooth_service.dart`
@@ -747,14 +815,14 @@ flutter build appbundle --release  # Para Google Play
 | 2. Arquitectura Base | 2 días | ✅ COMPLETADA |
 | 3. Base de Datos | 1 día | ✅ COMPLETADA |
 | 4. GPS & Tracking | 2 días | ✅ COMPLETADA |
-| 5. Bluetooth & Sensores | 2 días | ⏺️ **PRÓXIMA** |
-| 6. Sincronización | 1 día | ⏺️ Pendiente |
+| 5. Bluetooth & Sensores | 2 días | ✅ COMPLETADA |
+| 6. Sincronización | 1 día | ⏺️ **PRÓXIMA** |
 | 7. UI - Sesiones | 3 días | ⏺️ Pendiente |
 | 8. UI - Configuración | 2 días | ⏺️ Pendiente |
 | 9. Características Avanzadas | 2 días | ⏺️ Pendiente |
 | 10. Testing Automatizado | 1.5 días | ⏺️ Pendiente |
 | 11. Build & Release | 1.5 días | ⏺️ Pendiente |
-| **TOTAL** | **19 días** | ⏳ En progreso (4/11 completadas)
+| **TOTAL** | **19 días** | ⏳ En progreso (5/11 completadas)
 
 ---
 
