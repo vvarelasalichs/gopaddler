@@ -157,21 +157,66 @@ SHA: 5982f8e
 
 ---
 
-## 📍 FASE 4: GPS & Tracking (Estimado 2 días)
+## 📍 FASE 4: GPS & Tracking (Completada ✅ 2 días)
 
 ### Objetivos
-- [ ] Geolocalización funcionando
-- [ ] GPS tracking en tiempo real
-- [ ] Detector de strokes migrado
-- [ ] Pantalla de sesión activa
+- [x] Geolocalización funcionando
+- [x] GPS tracking en tiempo real (LocationService)
+- [x] Detector de strokes migrado (StrokeDetector)
+- [x] Pantalla de sesión activa (SessionActivePage)
+- [x] BLoC para orquestar GPS (GpsBloc)
 
-### Tareas
-1. Integración geolocator
-2. Setup background GPS
-3. Migración de stroke detector logic
-4. UI de tracking
+### Tareas Completadas
+1. ✅ Integración geolocator package
+2. ✅ LocationService: streaming de posiciones, manejo de permisos, buffer de puntos
+3. ✅ Migración de stroke detector algorithm de Cordova
+4. ✅ GpsBloc: orquestar LocationService y estados de tracking
+5. ✅ SessionActivePage: UI con métricas en tiempo real
+6. ✅ Registrar LocationService y GpsBloc en ServiceLocator
+7. ✅ Agregar GpsBloc a MultiBlocProvider en main.dart
+
+### Detalles Implementados
+- **LocationService** (lib/data/services/location_service.dart):
+  - Gestión de permisos GPS con validación de estado
+  - Streaming de posiciones con intervalo configurable (default 5s)
+  - Buffer automático de puntos GPS para cálculos de distancia/velocidad
+  - Cálculo de distancia total con fórmula Haversine
+  - Métodos: requestPermissions, getCurrentPosition, startPositionStream, stopPositionStream
+  
+- **StrokeDetector** (lib/domain/services/stroke_detector.dart):
+  - Detecta strokes a partir de datos acelerómetro (magnitud x,y,z)
+  - Buffer circular de 20 muestras para suavizado de ruido
+  - Detección de picos con thresholds configurables
+  - Validación de intervalos mínimo/máximo entre strokes
+  - Cálculo automático de stroke rate (strokes/minute)
+  - Métodos: processAccelerometerData, getStats, calibrate
+  - Migrado desde Cordova stroke-detector.js
+  
+- **GpsBloc** (lib/presentation/bloc/gps/gps_bloc.dart):
+  - Eventos: RequestGpsPermissionsEvent, StartGpsTrackingEvent, StopGpsTrackingEvent, GpsLocationReceivedEvent, GpsErrorEvent
+  - Estados: GpsInitial, GpsPermissionsRequesting, GpsPermissionsDenied, GpsPermissionsGranted, GpsTracking, GpsStopped, GpsError
+  - Orquestación automática de LocationService
+  - Cálculo continuo de métricas: distancia total, velocidad promedio, conteo de puntos
+  - Cleanup automático en close()
+  
+- **SessionActivePage** (lib/presentation/pages/session_active_page.dart):
+  - Estados visuales: Initial, PermissionsRequesting, PermissionsDenied, PermissionsGranted, Tracking, Stopped, Error
+  - Visualización de métricas en tiempo real: distancia, velocidad, altitud, precisión
+  - Posición GPS actual (lat/lon con 6 decimales)
+  - Contador de puntos recopilados
+  - Botones: Iniciar Tracking, Detener Tracking, Guardar/Descartar sesión
+  - Uso de BlocListener para notificaciones de error
+  - Widget helper _buildMetricCard para componentes reutilizables
+
+### Commits
+```
+e57686f: FASE 4: Crear GpsBloc para orquestar LocationService
+3e3e649: FASE 4: Implementar UI para Sesión Activa con métricas GPS en tiempo real
+```
 
 ---
+
+## 📍 FASE 5: Bluetooth & Sensores (Estimado 2 días)
 
 ## 🔄 Actualizar Plan Conforme Avances
 
