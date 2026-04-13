@@ -40,6 +40,9 @@ class GoPaddlerApp extends StatelessWidget {
           create: (context) =>
               getIt<SettingsBloc>()..add(const LoadSettingsEvent()),
         ),
+        BlocProvider<GpsBloc>(
+          create: (context) => getIt<GpsBloc>(),
+        ),
       ],
       child: BlocBuilder<SettingsBloc, SettingsState>(
         builder: (context, state) {
