@@ -43,6 +43,12 @@ class GoPaddlerApp extends StatelessWidget {
         BlocProvider<GpsBloc>(
           create: (context) => getIt<GpsBloc>(),
         ),
+        BlocProvider<BluetoothBloc>(
+          create: (context) => getIt<BluetoothBloc>(),
+        ),
+        BlocProvider<HeartRateBloc>(
+          create: (context) => getIt<HeartRateBloc>(),
+        ),
       ],
       child: BlocBuilder<SettingsBloc, SettingsState>(
         builder: (context, state) {

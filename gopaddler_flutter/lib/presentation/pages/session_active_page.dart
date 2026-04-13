@@ -258,6 +258,35 @@ class _SessionActivePageState extends State<SessionActivePage> {
             ),
             const SizedBox(height: 16),
 
+            // Sensores (HR y Cadencia) si están disponibles
+            if (state.heartRate != null || state.cadence != null) ...[
+              Row(
+                children: [
+                  if (state.heartRate != null)
+                    Expanded(
+                      child: _buildSensorCard(
+                        title: 'Frecuencia Cardíaca',
+                        value: '${state.heartRate} bpm',
+                        icon: Icons.favorite,
+                        color: Colors.red,
+                      ),
+                    ),
+                  if (state.heartRate != null && state.cadence != null)
+                    const SizedBox(width: 8),
+                  if (state.cadence != null)
+                    Expanded(
+                      child: _buildSensorCard(
+                        title: 'Cadencia',
+                        value: '${state.cadence} rpm',
+                        icon: Icons.sync,
+                        color: Colors.blue,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+
             // Contadores
             Card(
               child: Padding(
@@ -422,6 +451,40 @@ class _SessionActivePageState extends State<SessionActivePage> {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSensorCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 32),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ],

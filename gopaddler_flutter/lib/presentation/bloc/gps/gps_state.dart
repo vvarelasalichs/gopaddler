@@ -37,6 +37,8 @@ class GpsTracking extends GpsState {
   final double totalDistance;
   final double averageSpeed;
   final int pointCount;
+  final int? heartRate;
+  final int? cadence;
 
   const GpsTracking({
     required this.latitude,
@@ -47,6 +49,8 @@ class GpsTracking extends GpsState {
     required this.totalDistance,
     required this.averageSpeed,
     required this.pointCount,
+    this.heartRate,
+    this.cadence,
   });
 
   @override
@@ -59,6 +63,8 @@ class GpsTracking extends GpsState {
         totalDistance,
         averageSpeed,
         pointCount,
+        heartRate,
+        cadence,
       ];
 
   GpsTracking copyWith({
@@ -70,6 +76,8 @@ class GpsTracking extends GpsState {
     double? totalDistance,
     double? averageSpeed,
     int? pointCount,
+    int? heartRate,
+    int? cadence,
   }) {
     return GpsTracking(
       latitude: latitude ?? this.latitude,
@@ -80,6 +88,8 @@ class GpsTracking extends GpsState {
       totalDistance: totalDistance ?? this.totalDistance,
       averageSpeed: averageSpeed ?? this.averageSpeed,
       pointCount: pointCount ?? this.pointCount,
+      heartRate: heartRate ?? this.heartRate,
+      cadence: cadence ?? this.cadence,
     );
   }
 }
