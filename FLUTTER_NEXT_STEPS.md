@@ -525,64 +525,56 @@ http: ^1.1.0
 
 **Commit:** f0c0cb9 "FASE 7: Fix critical compilation errors and complete widgets"
 
-## 📍 FASE 8: UI Principal - Configuración (Estimado 2 días)
+## ✅ FASE 8: UI Principal - Configuración (Completado ✓ - 1 día)
 
-### Objetivos
-- [ ] SettingsPage completa funcional
-- [ ] CalibrationPage para sensores
-- [ ] ChooseBoatPage y ChooseSportPage
-- [ ] ProfilePage de usuario
+### Estado: COMPLETADO
 
-### Tareas Detalladas
+**Archivos Creados:**
+1. ✅ lib/data/models/user.dart - User model con campos completos (id, name, email, profileImageUrl, preferredUnit, boatType, sportType, maxHeartRate, timestamps)
+2. ✅ lib/data/repositories/user_repository.dart - UserRepository con operaciones CRUD completas
+3. ✅ lib/presentation/pages/choose_boat_page.dart - Grid de 6 tipos de bote con selección
+4. ✅ lib/presentation/pages/choose_sport_page.dart - List view de 2 deportes (Paddling, Cycling)
+5. ✅ lib/presentation/pages/profile_page.dart - Perfil con avatar, datos y preferencias
+6. ✅ lib/presentation/pages/settings_page.dart - Página de ajustes completa con BLoC integration
+7. ✅ lib/presentation/pages/calibration_page.dart - Calibración de sensores (Accelerometer, GPS, HR)
 
-#### 8.1 Implementar SettingsPage completa
-**Archivo:** `lib/presentation/pages/settings_page.dart`
-- Secciones: Perfil, Preferencias, Sesiones, Sync, Bluetooth, Información, Acerca de
-- Preferencias: idioma, tema, unidades (km/millas)
-- Sesiones: frecuencia GPS, tipo bote, deporte
-- Sincronización: auto-sync, WiFi only, último sync, botón sincronizar
-- Bluetooth: dispositivos emparejados, botón escanear
+**Archivos Actualizados:**
+1. ✅ lib/presentation/bloc/settings/settings_bloc.dart - Añadidos handlers para todos los eventos de settings
+2. ✅ lib/presentation/bloc/settings/settings_event.dart - Eventos: UpdateSportTypeEvent, UpdateBoatTypeEvent, UpdateUnitsEvent, UpdateAutoSyncEvent, UpdateSyncOnWiFiOnlyEvent
+3. ✅ lib/presentation/bloc/settings/settings_state.dart - Estados: SettingsLoaded, SettingsUpdated, SettingsError
+4. ✅ pubspec.yaml - Agregada dependencia image_picker: ^1.0.0
 
-#### 8.2 Implementar CalibrationPage
-**Archivo:** `lib/presentation/pages/calibration_page.dart`
-- Calibración de acelerómetro, GPS, HR, cadencia
-- Botón "Reset a valores por defecto"
-- Instrucciones por sensor
+**Secciones en SettingsPage:**
+- Profile: Acceso a ProfilePage para editar datos del usuario
+- Preferences: Sport Type, Boat Type, Units (km/mi)
+- Sensors: Calibration con acceso a CalibrationPage
+- Synchronization: Auto-sync toggle, WiFi-only toggle, Sync Now button
+- About: Versión y Privacy Policy
 
-#### 8.3 Crear ChooseBoatPage
-**Archivo:** `lib/presentation/pages/choose_boat_page.dart`
-- Opciones: Single kayak, Double kayak, Canoe, Dragon boat, SUP, Outrigger canoe
-- Grid con iconos y selección
+**UserModel Features:**
+- Serialización bidireccional: toMap(), fromMap(), toJson(), fromJson()
+- copyWith() para actualizaciones inmutables
+- Campos: id, name, email, profileImageUrl, preferredUnit, boatType, sportType, maxHeartRate, createdAt, updatedAt
 
-#### 8.4 Crear ChooseSportPage
-**Archivo:** `lib/presentation/pages/choose_sport_page.dart`
-- Opciones: Paddling, Cycling
-- Afecta métricas mostradas
+**UserRepository Features:**
+- saveUser(user): Guardar usuario en SharedPreferences
+- getUser(): Cargar usuario de SharedPreferences
+- updateUser(user): Actualizar usuario con timestamp
+- deleteUser(): Limpiar datos del usuario
+- hasUser(): Verificar si existe usuario
+- isLoggedIn(): Validar si usuario está autenticado
 
-#### 8.5 Crear ProfilePage
-**Archivo:** `lib/presentation/pages/profile_page.dart`
-- Avatar, nombre, correo, estadísticas acumulativas
-- Botón editar y cerrar sesión
+**CalibrationPage Sensors:**
+1. Accelerometer: Instrucciones de surface plana + botón calibrate + reset
+2. GPS: Instrucciones outdoor + espera de signal + botón calibrate
+3. Heart Rate: Instrucciones pairing BLE + botón calibrate
 
-#### 8.6 Crear UserModel
-**Archivo:** `lib/data/models/user_model.dart`
-- Campos: id, name, email, profileImageUrl, preferredUnit, boatType, sportType
-- Serialización completa
+**Compilación:** ✅ PASS
+- 0 CRITICAL ERRORS
+- 2 warnings (unnecessary cast - menores)
+- 130 info (style suggestions)
 
-#### 8.7 Crear UserRepository
-**Archivo:** `lib/data/repositories/user_repository.dart`
-- CRUD para usuario
-- Integración con SharedPreferences
-
-#### 8.8 Actualizar SettingsBloc
-- Eventos: UpdateUserProfileEvent, UpdateBoatTypeEvent, UpdateSportTypeEvent
-- Persistencia con SharedPreferences
-
-### Dependencias a Agregar
-```yaml
-shared_preferences: ^2.2.0
-image_picker: ^1.0.0
-```
+**Commit:** 4a02f5d "FASE 8: UI Principal - Configuración - Completed Settings, Profile, Calibration pages"
 
 ---
 
