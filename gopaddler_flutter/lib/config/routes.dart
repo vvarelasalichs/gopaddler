@@ -7,6 +7,7 @@ import 'package:gopaddler_flutter/presentation/pages/session_summary_page.dart';
 import 'package:gopaddler_flutter/presentation/pages/settings_page.dart';
 import 'package:gopaddler_flutter/presentation/pages/bluetooth_page.dart';
 import 'package:gopaddler_flutter/presentation/pages/calibration_page.dart';
+import 'package:gopaddler_flutter/data/models/session.dart';
 
 /// Main app router configuration
 final GoRouter router = GoRouter(
@@ -31,10 +32,15 @@ final GoRouter router = GoRouter(
           },
         ),
         GoRoute(
-          path: 'session/summary/:sessionId',
+          path: 'session/summary',
           builder: (BuildContext context, GoRouterState state) {
-            final sessionId = state.pathParameters['sessionId'] ?? '';
-            return SessionSummaryPage(sessionId: sessionId);
+            final session = state.extra as Session?;
+            if (session == null) {
+              return const Scaffold(
+                body: Center(child: Text('Session not found')),
+              );
+            }
+            return SessionSummaryPage(session: session);
           },
         ),
         GoRoute(

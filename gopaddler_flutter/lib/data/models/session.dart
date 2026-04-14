@@ -13,6 +13,7 @@ class Session {
   final List<HeartRateZone> zones;
   final SessionSettings settings;
   bool isSynced;
+  final String? notes;
 
   Session({
     required this.id,
@@ -26,6 +27,7 @@ class Session {
     this.zones = const [],
     required this.settings,
     this.isSynced = false,
+    this.notes,
   });
 
   // Getters para cálculos
@@ -54,6 +56,37 @@ class Session {
         0.0, (prev, point) => point.speed > prev ? point.speed : prev);
   }
 
+  double getEfficiencyScore() {
+    if (gpsPoints.length < 2) return 0.0;
+    
+    // Calcular velocidades
+    final speeds = <double>[];
+    for (int i = 0; i < gpsPoints.length - 1; i++) {
+      speeds.add(gpsPoints[i].speed);
+    }
+    speeds.add(gpsPoints.last.speed);
+    
+    if (speeds.isEmpty) return 0.0;
+    
+    // Calcular media
+    final mean = speeds.reduce((a, b) => a + b) / speeds.length;
+    
+    // Calcular desviación estándar
+    final variance =
+        speeds.map((s) => (s - mean) * (s - mean)).reduce((a, b) => a + b) /
+            speeds.length;
+    final stdDev = sqrt(variance);
+    
+    // Convertir a eficiencia (menos variación = más eficiencia)
+    // Si no hay variación (todos a veloc media), eficiencia = 100
+    // Si hay mucha variación, eficiencia baja
+    final coefficientOfVariation = mean > 0 ? stdDev / mean : 0.0;
+    
+    // Normalizar entre 0-100
+    return (100 * (1 - ((coefficientOfVariation / 3).clamp(0.0, 1.0))))
+        .clamp(0.0, 100.0);
+  }
+
   // Serialización para base de datos
   Map<String, dynamic> toMap() {
     return {
@@ -66,6 +99,7 @@ class Session {
       'averageSpeed': averageSpeed,
       'maxSpeed': maxSpeed,
       'isSynced': isSynced ? 1 : 0,
+      'notes': notes,
       'createdAt': DateTime.now().toIso8601String(),
     };
   }
@@ -82,6 +116,7 @@ class Session {
       'totalDistance': totalDistance,
       'averageSpeed': averageSpeed,
       'maxSpeed': maxSpeed,
+      'notes': notes,
       'gpsPoints': gpsPoints.map((p) => p.toJson()).toList(),
       'measurements': measurements.map((m) => m.toJson()).toList(),
       'splits': splits.map((s) => s.toJson()).toList(),
@@ -98,6 +133,7 @@ class Session {
       endTime: map['endTime'] != null ? DateTime.parse(map['endTime']) : null,
       sportType: map['sportType'] ?? 'canoeing',
       boatType: map['boatType'],
+      notes: map['notes'],
       settings: SessionSettings.fromMap(map['settings'] ?? {}),
       isSynced: (map['isSynced'] ?? 0) == 1,
     );
@@ -110,6 +146,7 @@ class Session {
       endTime: json['endTime'] != null ? DateTime.parse(json['endTime']) : null,
       sportType: json['sportType'] ?? 'canoeing',
       boatType: json['boatType'],
+      notes: json['notes'],
       gpsPoints: (json['gpsPoints'] as List? ?? [])
           .map((p) => GpsPoint.fromJson(p))
           .toList(),

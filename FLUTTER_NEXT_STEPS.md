@@ -493,65 +493,108 @@ http: ^1.1.0
 ## 📍 FASE 7: UI Principal - Sesiones (Estimado 3 días)
 
 ### Objetivos
-- [ ] HomePage mejorada
-- [ ] SessionsListPage funcional
-- [ ] SessionSummaryPage con gráficos
-- [ ] Integración de datos
+- [ ] HomePage mejorada con estadísticas
+- [ ] SessionsListPage con lista, filtros y búsqueda
+- [ ] SessionSummaryPage con gráficos y mapas
+- [ ] Widgets reutilizables para UI
 
 ### Tareas Detalladas
 
-#### 7.1 Mejorar HomePage
-**Archivo:** `lib/presentation/pages/home_page.dart`
-- CurrentSessionCard (sesión activa actual)
-- StatsCard (últimas métricas)
-- QuickStartButton (ir a SessionActivePage)
-- RecentSessionsList (últimas 3 sesiones)
-- Verificar permisos en onInit
+#### 7.1 Crear Widgets Reutilizables
 
-#### 7.2 Implementar SessionsListPage
-**Archivo:** `lib/presentation/pages/sessions_page.dart`
-- SessionListTile mejorado con thumbnail, distancia, duración, velocidad
-- Filtros: por tipo (paddling/cycling), por fecha
-- Búsqueda por texto
-- Pull-to-refresh
-- Delete con confirmación
-- Tap → SessionSummaryPage
-
-#### 7.3 Crear SessionSummaryPage mejorada
-**Archivo:** `lib/presentation/pages/session_summary_page.dart`
-- Tabs: Overview, Gráficos, Mapa, Splits, Zonas
-- Overview: distancia, duración, vel min/max/avg
-- Gráficos: velocidad vs tiempo (line chart)
-- Mapa: ruta con polyline
-- Splits: table con tiempo/distancia/ritmo
-- Zonas: HR zones con colores y % tiempo
-- Botones: Compartir, Editar, Borrar, Descargar
-
-#### 7.4 Crear ChartWidgets
 **Archivo:** `lib/presentation/widgets/chart_widgets.dart`
-- SpeedChart (fl_chart line chart)
-- HeartRateChart (con zonas coloreadas)
-- DistanceChart (bar chart)
-- SplitsTable (DataTable)
+- SpeedChart: line chart velocidad vs tiempo (fl_chart)
+- HeartRateChart: line chart con zonas HR coloreadas
+- DistanceChart: bar chart de splits
+- SplitsTable: DataTable interactiva con sorting
 
-#### 7.5 Integrar Maps
 **Archivo:** `lib/presentation/widgets/session_map.dart`
-- flutter_map o google_maps_flutter
-- Ruta de GPS points
-- Markers inicio/fin
-- Polyline
+- SessionMap: flutter_map con polyline de ruta
+- Markers: inicio (verde), fin (rojo)
+- Zoom manual
+- Conversión de GpsPoint a LatLng
 
-#### 7.6 Crear NotesModel
-- Agregar tabla `notes` en DatabaseService
-- Campo notes en Session model
-- UI para editar notas en SessionSummaryPage
+**Archivo:** `lib/presentation/widgets/stat_card.dart`
+- StatCard: tarjeta con icono, título, valor
+- Animación al tocar (scale)
+
+**Archivo:** `lib/presentation/widgets/current_session_card.dart`
+- CurrentSessionCard: estado de sesión actual
+- Botones "Continuar" o "Iniciar"
+- Preview de última sesión
+
+#### 7.2 Mejorar HomePage
+
+**Archivo:** `lib/presentation/pages/home_page.dart`
+- CurrentSessionCard widget
+- QuickStats: 4 StatCards (km, sesiones, HR avg, cadencia avg)
+- RecentSessions: ListView horizontal de últimas 3 sesiones
+- FAB: botón "+" para nueva sesión
+- Pull-to-refresh
+- Integración con SessionBloc
+
+#### 7.3 Actualizar SessionsListPage
+
+**Archivo:** `lib/presentation/pages/sessions_page.dart`
+- SessionListTile personalizado
+- Filtros: tipo (Paddling/Cycling), fecha, búsqueda
+- Pull-to-refresh
+- Swipe to delete (flutter_slidable)
+- Integración con SessionBloc + SyncBloc
+
+#### 7.4 Implementar SessionSummaryPage Completa
+
+**Archivo:** `lib/presentation/pages/session_summary_page.dart`
+- Tabs: Overview, Gráficos, Mapa, Splits, Análisis
+- Overview: distancia, duración, velocidades, HR, altitud
+- Gráficos: speed, HR, distance charts
+- Mapa: ruta con polyline
+- Splits: tabla completa
+- Análisis: comparativa, recomendaciones, eficiencia
+
+#### 7.5 Agregar TrainingZones Model
+
+**Archivo:** `lib/domain/models/training_zones.dart`
+- Clase TrainingZone con name, minBpm, maxBpm, color
+- Static getZonesForMaxHR(maxHR): zonificación automática
+
+#### 7.6 Actualizar Session Model
+
+**Archivo:** `lib/data/models/session.dart` (modificar)
+- Agregar: notes: String?
+- Agregar: getEfficiencyScore(): double (basado en consistencia)
+
+#### 7.7 Extender SessionRepository
+
+**Archivo:** `lib/data/repositories/session_repository.dart` (modificar)
+- getSortedSessions(sortBy): filtrado y sorting
+- filterSessions(type, dateRange): filtrado por criterios
+- searchSessions(query): búsqueda de texto
 
 ### Dependencias a Agregar
 ```yaml
 fl_chart: ^0.63.0
 flutter_map: ^4.0.0
 intl: ^0.20.2
+latlong2: ^0.8.2
+share_plus: ^7.0.0
+flutter_slidable: ^3.0.0
 ```
+
+### Archivos a Crear
+1. lib/presentation/widgets/chart_widgets.dart
+2. lib/presentation/widgets/session_map.dart
+3. lib/presentation/widgets/stat_card.dart
+4. lib/presentation/widgets/current_session_card.dart
+5. lib/domain/models/training_zones.dart
+
+### Archivos a Modificar
+1. lib/presentation/pages/home_page.dart
+2. lib/presentation/pages/sessions_page.dart
+3. lib/presentation/pages/session_summary_page.dart
+4. lib/data/models/session.dart
+5. lib/data/repositories/session_repository.dart
+6. pubspec.yaml
 
 ---
 

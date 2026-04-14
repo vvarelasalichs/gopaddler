@@ -29,15 +29,17 @@ dependencies:
   
   # Networking & Sync
   web_socket_channel: ^2.4.0
-  http: ^1.1.0
+  http: ^0.13.6
   shared_preferences: ^2.2.0
   
   # UI & Navigation
   go_router: ^12.0.0
   cupertino_icons: ^1.0.0
   
-  # Gráficos
-  fl_chart: ^0.68.0
+  # Gráficos y Mapas
+  fl_chart: ^0.63.0
+  flutter_map: ^4.0.0
+  latlong2: ^0.8.2
   
   # Utilidades
   intl: ^0.20.2
@@ -46,6 +48,8 @@ dependencies:
   connectivity_plus: ^5.0.0
   device_info_plus: ^9.0.0
   package_info_plus: ^5.0.0
+  share_plus: ^7.0.0
+  flutter_slidable: ^3.0.0
   
   # Locale
   flutter_localizations:
