@@ -8,6 +8,8 @@ import '../data/services/sync_service.dart';
 import '../data/services/strava_service.dart';
 import '../data/services/websocket_service.dart';
 import '../data/repositories/session_repository.dart';
+import '../data/repositories/user_repository.dart';
+import '../domain/services/analytics_service.dart';
 import '../config/environment_config.dart';
 
 final getIt = GetIt.instance;
@@ -19,6 +21,7 @@ class ServiceLocator {
     getIt.registerSingleton<LocationService>(LocationService());
     getIt.registerSingleton<BluetoothService>(BluetoothService());
     getIt.registerSingleton<SensorService>(SensorService());
+    getIt.registerSingleton<AnalyticsService>(AnalyticsService());
 
     // Sync Services
     getIt.registerSingleton<SyncService>(

@@ -279,61 +279,99 @@ class Measurement {
 // Split Model para intervalos
 class Split {
   final int number;
+  final String? name; // e.g., "Warm-up", "Main set", "Cool-down"
   final Duration duration;
   final double distance;
   final double averageSpeed;
+  final double maxSpeed;
   final double averagePace;
   final int? averageHeartRate;
+  final int? maxHeartRate;
   final int? averageCadence;
   final int? averageStrokeRate;
+  final bool isMaxEffort; // Indicates if this was a high-intensity split
 
   Split({
     required this.number,
+    this.name,
     required this.duration,
     required this.distance,
     required this.averageSpeed,
+    this.maxSpeed = 0.0,
     required this.averagePace,
     this.averageHeartRate,
+    this.maxHeartRate,
     this.averageCadence,
     this.averageStrokeRate,
+    this.isMaxEffort = false,
   });
+
+  /// Calculate intensity level (0-100) based on speed
+  int getIntensityLevel(double maxSessionSpeed) {
+    if (maxSessionSpeed == 0) return 0;
+    return ((averageSpeed / maxSessionSpeed) * 100).toInt().clamp(0, 100);
+  }
+
+  /// Check if this split was faster than average
+  bool isFasterThanAverage(double sessionAverageSpeed) {
+    return averageSpeed > sessionAverageSpeed * 1.1; // 10% faster
+  }
+
+  /// Format split time for display (e.g., "5:30")
+  String formatTime() {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds.remainder(60);
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
 
   Map<String, dynamic> toMap() {
     return {
       'number': number,
+      'name': name,
       'durationSeconds': duration.inSeconds,
       'distance': distance,
       'averageSpeed': averageSpeed,
+      'maxSpeed': maxSpeed,
       'averagePace': averagePace,
       'averageHeartRate': averageHeartRate,
+      'maxHeartRate': maxHeartRate,
       'averageCadence': averageCadence,
       'averageStrokeRate': averageStrokeRate,
+      'isMaxEffort': isMaxEffort ? 1 : 0,
     };
   }
 
   Map<String, dynamic> toJson() {
     return {
       'number': number,
+      'name': name,
       'duration': duration.inSeconds,
       'distance': distance,
       'averageSpeed': averageSpeed,
+      'maxSpeed': maxSpeed,
       'averagePace': averagePace,
       'averageHeartRate': averageHeartRate,
+      'maxHeartRate': maxHeartRate,
       'averageCadence': averageCadence,
       'averageStrokeRate': averageStrokeRate,
+      'isMaxEffort': isMaxEffort,
     };
   }
 
   factory Split.fromMap(Map<String, dynamic> map) {
     return Split(
       number: map['number'] ?? 0,
+      name: map['name'],
       duration: Duration(seconds: map['durationSeconds'] ?? 0),
       distance: (map['distance'] ?? 0.0).toDouble(),
       averageSpeed: (map['averageSpeed'] ?? 0.0).toDouble(),
+      maxSpeed: (map['maxSpeed'] ?? 0.0).toDouble(),
       averagePace: (map['averagePace'] ?? 0.0).toDouble(),
       averageHeartRate: map['averageHeartRate'],
+      maxHeartRate: map['maxHeartRate'],
       averageCadence: map['averageCadence'],
       averageStrokeRate: map['averageStrokeRate'],
+      isMaxEffort: (map['isMaxEffort'] ?? 0) == 1,
     );
   }
 
