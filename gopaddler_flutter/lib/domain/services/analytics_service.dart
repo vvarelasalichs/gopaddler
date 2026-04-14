@@ -87,7 +87,7 @@ class AnalyticsService {
         averageHeartRate: averageHeartRate,
         maxHeartRate: maxHeartRateValue,
         minHeartRate: minHeartRateValue,
-        zoneDistribution: zoneDistribution,
+        zoneDistribution: zoneDistribution?.cast<String, double>(),
         efficiencyScore: efficiencyScore,
         maxEfforts: maxEfforts,
         variabilityIndex: variabilityIndex,
@@ -95,8 +95,8 @@ class AnalyticsService {
         maxCadence: maxCadence,
         averageStrokeRate: averageStrokeRate,
         maxStrokeRate: maxStrokeRate,
-        elevationGain: elevationStats['gain'],
-        elevationLoss: elevationStats['loss'],
+        elevationGain: elevationStats['gain']?.toInt(),
+        elevationLoss: elevationStats['loss']?.toInt(),
         minAltitude: elevationStats['min'],
         maxAltitude: elevationStats['max'],
         comparisonWithPrevious: comparison,
@@ -112,8 +112,8 @@ class AnalyticsService {
   List<int> _extractHeartRates(Session session) {
     final rates = <int>[];
     for (final measurement in session.measurements) {
-      if (measurement.heartRate != null) {
-        rates.add(measurement.heartRate!);
+      if (measurement.type == 'heartRate') {
+        rates.add(measurement.value.toInt());
       }
     }
     return rates;
@@ -123,8 +123,8 @@ class AnalyticsService {
   List<int> _extractCadenceData(Session session) {
     final cadences = <int>[];
     for (final measurement in session.measurements) {
-      if (measurement.cadence != null) {
-        cadences.add(measurement.cadence!);
+      if (measurement.type == 'cadence') {
+        cadences.add(measurement.value.toInt());
       }
     }
     return cadences;
@@ -134,8 +134,8 @@ class AnalyticsService {
   List<int> _extractStrokeRates(Session session) {
     final rates = <int>[];
     for (final measurement in session.measurements) {
-      if (measurement.strokeRate != null) {
-        rates.add(measurement.strokeRate!);
+      if (measurement.type == 'strokeRate') {
+        rates.add(measurement.value.toInt());
       }
     }
     return rates;
@@ -191,7 +191,7 @@ class AnalyticsService {
   }
 
   /// Calculate elevation statistics from GPS points
-  Map<String, int?> _calculateElevationStats(Session session) {
+  Map<String, double?> _calculateElevationStats(Session session) {
     if (session.gpsPoints.isEmpty) {
       return {'gain': null, 'loss': null, 'min': null, 'max': null};
     }
@@ -205,8 +205,8 @@ class AnalyticsService {
       return {'gain': null, 'loss': null, 'min': null, 'max': null};
     }
 
-    int elevationGain = 0;
-    int elevationLoss = 0;
+    double elevationGain = 0;
+    double elevationLoss = 0;
 
     for (int i = 1; i < altitudes.length; i++) {
       final diff = altitudes[i] - altitudes[i - 1];

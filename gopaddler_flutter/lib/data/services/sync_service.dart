@@ -1,25 +1,48 @@
-import 'package:http/http.dart' as http;
+// import 'package:http/http.dart' as http; // MVP: HTTP calls disabled
 import 'dart:async';
-import 'dart:convert';
+// import 'dart:convert'; // MVP: JSON encoding disabled
 import '../models/sync_queue.dart';
 import '../models/session.dart';
-import '../../config/environment_config.dart';
+// import '../../config/environment_config.dart'; // MVP: API config disabled
 import '../../utils/app_logger.dart';
 import 'database_service.dart';
 
 /// Service for synchronizing sessions to the server
+///
+/// ⚠️ MVP MODE: Server sync DISABLED
+///
+/// This service is kept for compatibility but does NOT make any server calls.
+/// All sessions are stored locally in SQLite only.
+///
+/// To enable server sync in the future, you will need:
+/// - Backend API with endpoints (see documentation at bottom of this file)
+/// - Uncomment HTTP imports
+/// - Restore HTTP POST/GET logic in uploadSession() and downloadSessions()
+/// - Update EnvironmentConfig with valid API endpoints
+/// - Setup OAuth2 authentication if needed
 class SyncService {
   final DatabaseService _database;
-  static const String _tag = 'SyncService';
-  static const int _maxRetries = 5;
-  static const int _baseDelaySeconds = 1;
+  static const String _tag = 'SyncService [MVP-DISABLED]';
 
   SyncService(this._database);
 
-  /// Upload a session to the server
+  /// MVP: Disabled - does nothing but log
+  /// In production: would upload session to backend server
+  ///
+  /// Future implementation:
+  /// ```dart
+  /// final response = await http.post(
+  ///   Uri.parse('${EnvironmentConfig.current.apiBaseUrl}/sessions/$sessionId'),
+  ///   headers: {'Authorization': 'Bearer ${EnvironmentConfig.current.apiKey}'},
+  ///   body: jsonEncode(session.toMap()),
+  /// );
+  /// ```
   Future<bool> uploadSession(String sessionId) async {
     try {
-      AppLogger.info('Uploading session: $sessionId', tag: _tag);
+      AppLogger.info(
+        'MVP MODE: Upload skipped (server sync disabled) for session: $sessionId',
+        tag: _tag,
+      );
 
       final session = await _database.getSession(sessionId);
       if (session == null) {
@@ -27,44 +50,15 @@ class SyncService {
         return false;
       }
 
-      final url = Uri.parse(
-          '${EnvironmentConfig.current.apiBaseUrl}/sessions/$sessionId');
+      // MVP: Mark as synced locally (no server upload)
+      session.isSynced = true;
+      await _database.updateSession(session);
+      await _database.removeSyncQueue(sessionId);
 
-      final response = await http
-          .post(
-            url,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ${EnvironmentConfig.current.apiKey}',
-            },
-            body: jsonEncode(session.toMap()),
-          )
-          .timeout(
-            const Duration(seconds: 30),
-            onTimeout: () => throw TimeoutException('Upload request timeout'),
-          );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        AppLogger.info('Session uploaded successfully: $sessionId', tag: _tag);
-
-        // Update session as synced
-        session.isSynced = true;
-        await _database.updateSession(session);
-
-        // Remove from sync queue
-        await _database.removeSyncQueue(sessionId);
-
-        return true;
-      } else {
-        AppLogger.error(
-          'Upload failed with status ${response.statusCode}: ${response.body}',
-          tag: _tag,
-        );
-        return false;
-      }
+      return true;
     } catch (e) {
       AppLogger.error(
-        'Error uploading session',
+        'Error in MVP upload',
         tag: _tag,
         exception: e,
       );
@@ -72,41 +66,27 @@ class SyncService {
     }
   }
 
-  /// Download sessions from the server
+  /// MVP: Disabled - returns empty list
+  /// In production: would download sessions from backend server
+  ///
+  /// Future implementation:
+  /// ```dart
+  /// final response = await http.get(
+  ///   Uri.parse('${EnvironmentConfig.current.apiBaseUrl}/sessions'),
+  ///   headers: {'Authorization': 'Bearer ${EnvironmentConfig.current.apiKey}'},
+  /// );
+  /// ```
   Future<List<Session>> downloadSessions() async {
     try {
-      AppLogger.info('Downloading sessions from server', tag: _tag);
-
-      final url = Uri.parse('${EnvironmentConfig.current.apiBaseUrl}/sessions');
-
-      final response = await http.get(
-        url,
-        headers: {
-          'Authorization': 'Bearer ${EnvironmentConfig.current.apiKey}',
-        },
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () => throw TimeoutException('Download request timeout'),
+      AppLogger.info(
+        'MVP MODE: Download skipped (server sync disabled)',
+        tag: _tag,
       );
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        final sessions = data
-            .map((json) => Session.fromMap(json as Map<String, dynamic>))
-            .toList();
-
-        AppLogger.info('Downloaded ${sessions.length} sessions', tag: _tag);
-        return sessions;
-      } else {
-        AppLogger.error(
-          'Download failed with status ${response.statusCode}',
-          tag: _tag,
-        );
-        return [];
-      }
+      // MVP: Return empty - all sessions stored locally
+      return [];
     } catch (e) {
       AppLogger.error(
-        'Error downloading sessions',
+        'Error in MVP download',
         tag: _tag,
         exception: e,
       );
@@ -114,10 +94,13 @@ class SyncService {
     }
   }
 
-  /// Queue a session for synchronization
+  /// Queue a session for synchronization (local only in MVP)
   Future<void> queueSessionForSync(String sessionId) async {
     try {
-      AppLogger.info('Queueing session for sync: $sessionId', tag: _tag);
+      AppLogger.info(
+        'MVP MODE: Queueing session for local storage only: $sessionId',
+        tag: _tag,
+      );
       await _database.insertSyncQueue(sessionId);
     } catch (e) {
       AppLogger.error(
@@ -133,7 +116,10 @@ class SyncService {
   Future<List<SyncQueue>> getSyncQueue() async {
     try {
       final queue = await _database.getSyncQueue();
-      AppLogger.debug('Retrieved ${queue.length} sync queue items', tag: _tag);
+      AppLogger.debug(
+        'MVP MODE: Retrieved ${queue.length} items from local queue',
+        tag: _tag,
+      );
       return queue;
     } catch (e) {
       AppLogger.error(
@@ -160,12 +146,11 @@ class SyncService {
     }
   }
 
-  /// Check sync status of a session
+  /// Check sync status of a session (local only in MVP)
   Future<SyncStatus?> checkSyncStatus(String sessionId) async {
     try {
       final queueItem = await _database.getSyncQueueItem(sessionId);
       if (queueItem == null) {
-        // Check if already synced
         final session = await _database.getSession(sessionId);
         if (session?.isSynced ?? false) {
           return SyncStatus.completed;
@@ -183,80 +168,20 @@ class SyncService {
     }
   }
 
-  /// Upload a session with automatic retry logic
+  /// MVP: NO-OP retry logic (no server calls)
+  /// In production: use with HTTP retry and exponential backoff
   Future<bool> uploadWithRetry(String sessionId,
-      {int maxRetries = _maxRetries}) async {
+      {int maxRetries = 5}) async {
     try {
       AppLogger.info(
-        'Starting upload with retry for session: $sessionId',
+        'MVP MODE: Retry upload skipped for session: $sessionId',
         tag: _tag,
       );
-
-      bool success = false;
-      int attempt = 0;
-
-      while (attempt < maxRetries && !success) {
-        try {
-          success = await uploadSession(sessionId);
-
-          if (success) {
-            AppLogger.info(
-              'Upload successful for session: $sessionId',
-              tag: _tag,
-            );
-            await _database.updateSyncStatus(
-              sessionId,
-              SyncStatus.completed,
-              null,
-            );
-            return true;
-          }
-
-          attempt++;
-
-          if (attempt < maxRetries) {
-            // Calculate exponential backoff: 1s * 2^attempt
-            final delaySeconds = _baseDelaySeconds * (1 << attempt);
-            AppLogger.info(
-              'Retry attempt $attempt for session $sessionId, '
-              'waiting ${delaySeconds}s',
-              tag: _tag,
-            );
-
-            await Future.delayed(Duration(seconds: delaySeconds));
-          }
-        } catch (e) {
-          AppLogger.error(
-            'Error during upload attempt $attempt',
-            tag: _tag,
-            exception: e,
-          );
-
-          attempt++;
-
-          if (attempt < maxRetries) {
-            final delaySeconds = _baseDelaySeconds * (1 << attempt);
-            await Future.delayed(Duration(seconds: delaySeconds));
-          }
-        }
-      }
-
-      if (!success) {
-        AppLogger.error(
-          'Upload failed after $maxRetries retries for session: $sessionId',
-          tag: _tag,
-        );
-        await _database.updateSyncStatus(
-          sessionId,
-          SyncStatus.failed,
-          'Max retries exceeded',
-        );
-      }
-
-      return success;
+      // MVP: Just do single upload attempt (which is disabled)
+      return await uploadSession(sessionId);
     } catch (e) {
       AppLogger.error(
-        'Error in uploadWithRetry',
+        'Error in retry upload',
         tag: _tag,
         exception: e,
       );
@@ -264,3 +189,99 @@ class SyncService {
     }
   }
 }
+
+/// ============================================================================
+/// FUTURE IMPLEMENTATION GUIDE
+/// ============================================================================
+/// 
+/// When you have a backend server ready, implement these steps:
+/// 
+/// 1. CREATE BACKEND API with these endpoints:
+///    
+///    POST /api/sessions
+///      - Authentication: Bearer {apiKey}
+///      - Body: Session JSON (from toMap())
+///      - Returns: { sessionId, timestamp, status }
+///    
+///    GET /api/sessions
+///      - Authentication: Bearer {apiKey}
+///      - Returns: [{ sessionId, distance, duration, ... }]
+///    
+///    GET /api/sessions/{id}
+///      - Authentication: Bearer {apiKey}
+///      - Returns: Full session JSON
+///    
+///    PUT /api/sessions/{id}
+///      - Authentication: Bearer {apiKey}
+///      - Body: Updated session JSON
+///      - Returns: { status, updatedAt }
+///    
+///    DELETE /api/sessions/{id}
+///      - Authentication: Bearer {apiKey}
+///      - Returns: { status, deleted }
+/// 
+/// 2. UNCOMMENT IMPORTS:
+///    - Restore "import 'package:http/http.dart' as http;"
+///    - Restore "import 'dart:convert';"
+///    - Restore "import '../../config/environment_config.dart';"
+/// 
+/// 3. UPDATE uploadSession() METHOD:
+///    ```dart
+///    Future<bool> uploadSession(String sessionId) async {
+///      try {
+///        AppLogger.info('Uploading session: $sessionId', tag: _tag);
+///        final session = await _database.getSession(sessionId);
+///        if (session == null) return false;
+/// 
+///        final url = Uri.parse(
+///          '${EnvironmentConfig.current.apiBaseUrl}/sessions/$sessionId');
+///        
+///        final response = await http.post(
+///          url,
+///          headers: {
+///            'Content-Type': 'application/json',
+///            'Authorization': 'Bearer ${EnvironmentConfig.current.apiKey}',
+///          },
+///          body: jsonEncode(session.toMap()),
+///        ).timeout(const Duration(seconds: 30));
+///        
+///        if (response.statusCode == 200) {
+///          session.isSynced = true;
+///          await _database.updateSession(session);
+///          await _database.removeSyncQueue(sessionId);
+///          return true;
+///        }
+///        return false;
+///      } catch (e) {
+///        AppLogger.error('Error uploading session', exception: e);
+///        return false;
+///      }
+///    }
+///    ```
+/// 
+/// 4. UPDATE downloadSessions() METHOD:
+///    ```dart
+///    Future<List<Session>> downloadSessions() async {
+///      try {
+///        final url = Uri.parse('${EnvironmentConfig.current.apiBaseUrl}/sessions');
+///        final response = await http.get(
+///          url,
+///          headers: {'Authorization': 'Bearer ${EnvironmentConfig.current.apiKey}'},
+///        ).timeout(const Duration(seconds: 30));
+///        
+///        if (response.statusCode == 200) {
+///          final data = jsonDecode(response.body) as List;
+///          return data.map((j) => Session.fromJson(j)).toList();
+///        }
+///        return [];
+///      } catch (e) {
+///        AppLogger.error('Error downloading sessions', exception: e);
+///        return [];
+///      }
+///    }
+///    ```
+/// 
+/// 5. RESTORE uploadWithRetry() LOGIC with exponential backoff
+/// 
+/// 6. TEST with real backend before merging to main
+/// ============================================================================

@@ -1,11 +1,16 @@
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
-import 'dart:async';
 import '../models/session.dart';
 import '../../utils/app_logger.dart';
 
-/// Service for Strava API integration
+/// Service for Strava API integration (MVP: Disabled)
+/// 
+/// In MVP mode, this service is disabled and all methods return false/empty.
+/// Strava integration requires:
+/// - OAuth2 credentials (clientId, clientSecret)
+/// - Valid Strava account
+/// - Internet connectivity
+/// 
+/// This can be re-enabled when backend infrastructure and credentials are available.
 class StravaIntegrationService {
   static const String _tag = 'StravaIntegrationService';
 
@@ -73,43 +78,18 @@ class StravaIntegrationService {
   }
 
   /// Authenticate with Strava using authorization code (OAuth2)
+  /// MVP: DISABLED - No server connections in MVP mode
   Future<bool> authenticate(String authCode) async {
     try {
-      AppLogger.info('Authenticating with Strava', tag: _tag);
-
-      final response = await http.post(
-        Uri.parse(_authUrl),
-        body: {
-          'client_id': _clientId,
-          'client_secret': _clientSecret,
-          'code': authCode,
-          'grant_type': 'authorization_code',
-        },
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () => throw TimeoutException('Authentication timeout'),
+      AppLogger.info(
+        'MVP MODE: Strava authentication disabled. '
+        'Implement when Strava credentials available.',
+        tag: _tag,
       );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        _accessToken = data['access_token'] as String;
-        _refreshToken = data['refresh_token'] as String;
-        _expiresAt =
-            DateTime.now().add(Duration(seconds: data['expires_in'] as int));
-
-        await _saveTokens();
-        AppLogger.info('Successfully authenticated with Strava', tag: _tag);
-        return true;
-      } else {
-        AppLogger.error(
-          'Authentication failed: ${response.body}',
-          tag: _tag,
-        );
-        return false;
-      }
+      return false;
     } catch (e) {
       AppLogger.error(
-        'Error authenticating with Strava',
+        'Error in MVP authenticate',
         tag: _tag,
         exception: e,
       );
@@ -118,48 +98,14 @@ class StravaIntegrationService {
   }
 
   /// Refresh access token if expired
+  /// MVP: DISABLED - No server connections in MVP mode
   Future<bool> refreshToken() async {
     try {
-      if (_refreshToken == null) {
-        AppLogger.warning('No refresh token available', tag: _tag);
-        return false;
-      }
-
-      AppLogger.info('Refreshing Strava access token', tag: _tag);
-
-      final response = await http.post(
-        Uri.parse(_authUrl),
-        body: {
-          'client_id': _clientId,
-          'client_secret': _clientSecret,
-          'grant_type': 'refresh_token',
-          'refresh_token': _refreshToken,
-        },
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () => throw TimeoutException('Token refresh timeout'),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        _accessToken = data['access_token'] as String;
-        _refreshToken = data['refresh_token'] as String;
-        _expiresAt =
-            DateTime.now().add(Duration(seconds: data['expires_in'] as int));
-
-        await _saveTokens();
-        AppLogger.info('Token refreshed successfully', tag: _tag);
-        return true;
-      } else {
-        AppLogger.error(
-          'Token refresh failed: ${response.body}',
-          tag: _tag,
-        );
-        return false;
-      }
+      AppLogger.info('MVP MODE: Token refresh disabled', tag: _tag);
+      return false;
     } catch (e) {
       AppLogger.error(
-        'Error refreshing token',
+        'Error in MVP refreshToken',
         tag: _tag,
         exception: e,
       );
@@ -168,65 +114,17 @@ class StravaIntegrationService {
   }
 
   /// Upload a session activity to Strava
+  /// MVP: DISABLED - No server connections in MVP mode
   Future<bool> uploadActivity(Session session) async {
     try {
-      // Check if token needs refresh
-      if (_expiresAt != null && DateTime.now().isAfter(_expiresAt!)) {
-        final refreshed = await refreshToken();
-        if (!refreshed) {
-          AppLogger.error('Failed to refresh token', tag: _tag);
-          return false;
-        }
-      }
-
-      if (_accessToken == null) {
-        AppLogger.error('No access token available', tag: _tag);
-        return false;
-      }
-
-      AppLogger.info('Uploading activity to Strava for session: ${session.id}',
-          tag: _tag);
-
-      final activityData = {
-        'name': 'GoPaddler - ${session.sportType}',
-        'type': _mapToStravaActivityType(session.sportType),
-        'start_date_local': session.startTime.toIso8601String(),
-        'elapsed_time': session.duration.inSeconds,
-        'distance': session.totalDistance,
-        'description': 'Recorded with GoPaddler',
-      };
-
-      final response = await http
-          .post(
-            Uri.parse('$_apiBaseUrl/activities'),
-            headers: {
-              'Authorization': 'Bearer $_accessToken',
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode(activityData),
-          )
-          .timeout(
-            const Duration(seconds: 30),
-            onTimeout: () => throw TimeoutException('Strava upload timeout'),
-          );
-
-      if (response.statusCode == 201) {
-        AppLogger.info(
-          'Activity uploaded to Strava successfully',
-          tag: _tag,
-        );
-        return true;
-      } else {
-        AppLogger.error(
-          'Strava upload failed with status ${response.statusCode}: '
-          '${response.body}',
-          tag: _tag,
-        );
-        return false;
-      }
+      AppLogger.info(
+        'MVP MODE: Strava activity upload disabled for session: ${session.id}',
+        tag: _tag,
+      );
+      return false;
     } catch (e) {
       AppLogger.error(
-        'Error uploading to Strava',
+        'Error in MVP uploadActivity',
         tag: _tag,
         exception: e,
       );
@@ -235,37 +133,14 @@ class StravaIntegrationService {
   }
 
   /// Get athlete profile from Strava
+  /// MVP: DISABLED - No server connections in MVP mode
   Future<Map<String, dynamic>?> getAthleteProfile() async {
     try {
-      if (_accessToken == null) {
-        AppLogger.error('No access token available', tag: _tag);
-        return null;
-      }
-
-      AppLogger.info('Fetching athlete profile from Strava', tag: _tag);
-
-      final response = await http.get(
-        Uri.parse('$_apiBaseUrl/athlete'),
-        headers: {'Authorization': 'Bearer $_accessToken'},
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () => throw TimeoutException('Profile fetch timeout'),
-      );
-
-      if (response.statusCode == 200) {
-        final profile = jsonDecode(response.body) as Map<String, dynamic>;
-        AppLogger.debug('Athlete profile retrieved', tag: _tag);
-        return profile;
-      } else {
-        AppLogger.error(
-          'Failed to fetch profile with status ${response.statusCode}',
-          tag: _tag,
-        );
-        return null;
-      }
+      AppLogger.info('MVP MODE: Athlete profile fetch disabled', tag: _tag);
+      return null;
     } catch (e) {
       AppLogger.error(
-        'Error fetching athlete profile',
+        'Error in MVP getAthleteProfile',
         tag: _tag,
         exception: e,
       );
@@ -274,39 +149,17 @@ class StravaIntegrationService {
   }
 
   /// Fetch activities from Strava
+  /// MVP: DISABLED - No server connections in MVP mode
   Future<List<dynamic>> fetchActivities({int limit = 30}) async {
     try {
-      if (_accessToken == null) {
-        AppLogger.error('No access token available', tag: _tag);
-        return [];
-      }
-
-      AppLogger.info('Fetching activities from Strava (limit: $limit)',
-          tag: _tag);
-
-      final response = await http.get(
-        Uri.parse('$_apiBaseUrl/athlete/activities?per_page=$limit'),
-        headers: {'Authorization': 'Bearer $_accessToken'},
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () => throw TimeoutException('Activities fetch timeout'),
+      AppLogger.info(
+        'MVP MODE: Activity fetch disabled (limit: $limit)',
+        tag: _tag,
       );
-
-      if (response.statusCode == 200) {
-        final activities = jsonDecode(response.body) as List<dynamic>;
-        AppLogger.info('Retrieved ${activities.length} activities from Strava',
-            tag: _tag);
-        return activities;
-      } else {
-        AppLogger.error(
-          'Failed to fetch activities with status ${response.statusCode}',
-          tag: _tag,
-        );
-        return [];
-      }
+      return [];
     } catch (e) {
       AppLogger.error(
-        'Error fetching activities',
+        'Error in MVP fetchActivities',
         tag: _tag,
         exception: e,
       );
