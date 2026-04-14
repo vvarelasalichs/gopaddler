@@ -8,6 +8,9 @@ class AppSettings extends Equatable {
   final String? userEmail;
   final bool autoSync;
   final bool syncOnWiFiOnly;
+  final String? sportType;
+  final String? boatType;
+  final String preferredUnit;
 
   const AppSettings({
     this.languageCode = 'en',
@@ -17,6 +20,9 @@ class AppSettings extends Equatable {
     this.userEmail,
     this.autoSync = true,
     this.syncOnWiFiOnly = false,
+    this.sportType,
+    this.boatType,
+    this.preferredUnit = 'km',
   });
 
   AppSettings copyWith({
@@ -27,6 +33,9 @@ class AppSettings extends Equatable {
     String? userEmail,
     bool? autoSync,
     bool? syncOnWiFiOnly,
+    String? sportType,
+    String? boatType,
+    String? preferredUnit,
   }) {
     return AppSettings(
       languageCode: languageCode ?? this.languageCode,
@@ -36,6 +45,9 @@ class AppSettings extends Equatable {
       userEmail: userEmail ?? this.userEmail,
       autoSync: autoSync ?? this.autoSync,
       syncOnWiFiOnly: syncOnWiFiOnly ?? this.syncOnWiFiOnly,
+      sportType: sportType ?? this.sportType,
+      boatType: boatType ?? this.boatType,
+      preferredUnit: preferredUnit ?? this.preferredUnit,
     );
   }
 
@@ -48,6 +60,9 @@ class AppSettings extends Equatable {
         userEmail,
         autoSync,
         syncOnWiFiOnly,
+        sportType,
+        boatType,
+        preferredUnit,
       ];
 }
 

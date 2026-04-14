@@ -15,6 +15,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<UpdateUserProfileEvent>(_onUpdateUserProfile);
     on<UpdateAutoSyncEvent>(_onUpdateAutoSync);
     on<UpdateSyncOnWiFiOnlyEvent>(_onUpdateSyncOnWiFiOnly);
+    on<UpdateSportTypeEvent>(_onUpdateSportType);
+    on<UpdateBoatTypeEvent>(_onUpdateBoatType);
+    on<UpdateUnitsEvent>(_onUpdateUnits);
   }
 
   Future<void> _onLoadSettings(
@@ -108,6 +111,45 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       emit(SettingsUpdated(_settings));
     } catch (e) {
       emit(SettingsError('Error updating sync WiFi setting: $e'));
+    }
+  }
+
+  Future<void> _onUpdateSportType(
+    UpdateSportTypeEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    try {
+      _settings = _settings.copyWith(sportType: event.sportType);
+      // TODO: Persistir cambios
+      emit(SettingsUpdated(_settings));
+    } catch (e) {
+      emit(SettingsError('Error updating sport type: $e'));
+    }
+  }
+
+  Future<void> _onUpdateBoatType(
+    UpdateBoatTypeEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    try {
+      _settings = _settings.copyWith(boatType: event.boatType);
+      // TODO: Persistir cambios
+      emit(SettingsUpdated(_settings));
+    } catch (e) {
+      emit(SettingsError('Error updating boat type: $e'));
+    }
+  }
+
+  Future<void> _onUpdateUnits(
+    UpdateUnitsEvent event,
+    Emitter<SettingsState> emit,
+  ) async {
+    try {
+      _settings = _settings.copyWith(preferredUnit: event.unit);
+      // TODO: Persistir cambios
+      emit(SettingsUpdated(_settings));
+    } catch (e) {
+      emit(SettingsError('Error updating units: $e'));
     }
   }
 }

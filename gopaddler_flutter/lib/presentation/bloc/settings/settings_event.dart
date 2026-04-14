@@ -68,3 +68,30 @@ class UpdateSyncOnWiFiOnlyEvent extends SettingsEvent {
   @override
   List<Object?> get props => [wifiOnly];
 }
+
+class UpdateSportTypeEvent extends SettingsEvent {
+  final String sportType;
+
+  const UpdateSportTypeEvent(this.sportType);
+
+  @override
+  List<Object?> get props => [sportType];
+}
+
+class UpdateBoatTypeEvent extends SettingsEvent {
+  final String boatType;
+
+  const UpdateBoatTypeEvent(this.boatType);
+
+  @override
+  List<Object?> get props => [boatType];
+}
+
+class UpdateUnitsEvent extends SettingsEvent {
+  final String unit;
+
+  const UpdateUnitsEvent(this.unit);
+
+  @override
+  List<Object?> get props => [unit];
+}

@@ -50,6 +50,7 @@ dependencies:
   package_info_plus: ^5.0.0
   share_plus: ^7.0.0
   flutter_slidable: ^3.0.0
+  image_picker: ^1.0.0
   
   # Locale
   flutter_localizations:
